@@ -1,0 +1,269 @@
+<%- include('../partials/header', {title: 'My Donations – FoodBridge'}) %>
+<%- include('../partials/navbar') %>
+
+<div class="page-section">
+  <div class="container py-5">
+    <div class="section-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h2 class="section-title"><i class="bi bi-clock-history me-2"></i>My Donations</h2>
+        <p class="section-subtitle">Track all your food donations and their current status</p>
+      </div>
+      <a href="/donor/donate" class="btn btn-primary btn-donate-new">
+        <i class="bi bi-plus-circle me-2"></i>New Donation
+      </a>
+    </div>
+
+    <!-- Filters -->
+    <form method="GET" action="/donor/history" class="filter-bar mb-4">
+      <input type="text" name="search" placeholder="🔍 Search food name…" value="<%= query.search||'' %>"/>
+      <select name="status">
+        <option value="">All Status</option>
+        <option value="pending"   <%=query.status==='pending'  ?'selected':''%>>⏳ Pending</option>
+        <option value="accepted"  <%=query.status==='accepted' ?'selected':''%>>✅ Accepted</option>
+        <option value="picked_up" <%=query.status==='picked_up'?'selected':''%>>🚚 In Transit</option>
+        <option value="delivered" <%=query.status==='delivered'?'selected':''%>>🎉 Delivered</option>
+        <option value="rejected"  <%=query.status==='rejected' ?'selected':''%>>❌ Rejected</option>
+        <option value="expired"   <%=query.status==='expired'  ?'selected':''%>>⏰ Expired</option>
+      </select>
+      <button type="submit" class="btn-filter"><i class="bi bi-search me-1"></i>Filter</button>
+      <a href="/donor/history" class="btn-reset">Reset</a>
+    </form>
+
+    <% if (donations.length === 0) { %>
+      <div class="empty-state">
+        <div class="empty-icon">🍽️</div>
+        <h4>No donations found</h4>
+        <p>Start making a difference by donating your leftover food!</p>
+        <a href="/donor/donate" class="btn btn-primary">Donate Now</a>
+      </div>
+    <% } else { %>
+      <div class="donations-list">
+        <% donations.forEach(d => { %>
+          <div class="donation-item">
+            <div class="donation-item-left">
+              <div class="food-emoji">
+                <% const catEmojis = {cooked:'🥘',raw:'🥦',packaged:'📦',bakery:'🥖',fruits_veg:'🍎',dairy:'🥛',other:'🍱'}; %>
+                <%= catEmojis[d.category] || '🍱' %>
+              </div>
+              <div class="donation-info">
+                <h5 class="donation-name">
+                  <%= d.name %>
+                  <% if (d.tags && d.tags.length) { %>
+                    <% d.tags.slice(0,3).forEach(t => { %>
+                      <span style="font-size:.65rem;background:#e8f5ee;color:#1a4a2e;padding:2px 7px;border-radius:10px;font-weight:600;margin-left:4px;">#<%= t %></span>
+                    <% }) %>
+                  <% } %>
+                </h5>
+                <div class="donation-meta">
+                  <span><i class="bi bi-box me-1"></i><%= d.quantity %></span>
+                  <% if (d.servings) { %><span><i class="bi bi-people me-1"></i>~<%= d.servings %> servings</span><% } %>
+                  <span><i class="bi bi-geo-alt me-1"></i><%= d.pickupLocation.length > 35 ? d.pickupLocation.substring(0,35)+'…' : d.pickupLocation %></span>
+                  <span><i class="bi bi-calendar me-1"></i><%= new Date(d.createdAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) %></span>
+                </div>
+                <% if (d.expiresAt) { %>
+                  <div style="font-size:.78rem;color:<%= new Date(d.expiresAt) < new Date() ? '#ef4444' : '#f59e0b' %>;margin-top:3px;">
+                    <i class="bi bi-clock me-1"></i>
+                    <%= new Date(d.expiresAt) < new Date() ? 'Expired' : 'Expires' %>:
+                    <%= new Date(d.expiresAt).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) %>
+                  </div>
+                <% } %>
+                <% if (d.ngoName) { %>
+                  <div class="ngo-assigned"><i class="bi bi-building me-1"></i>Assigned to: <strong><%= d.ngoName %></strong></div>
+                <% } %>
+                <% if (d.deliveryLocation) { %>
+                  <div class="delivery-info"><i class="bi bi-send-check me-1"></i>Your delivery: <%= d.deliveryLocation.length > 45 ? d.deliveryLocation.substring(0,45)+'…' : d.deliveryLocation %></div>
+                <% } %>
+                <% if (d.ngoDeliveryLocation) { %>
+                  <div class="ngo-delivery-info" style="<%= d.ngoOverrideDelivery ? 'background:#fff7ed;border-color:#fed7aa;' : '' %>">
+                    <i class="bi bi-pin-map-fill me-1"></i>
+                    <%= d.ngoOverrideDelivery ? "⚠️ NGO changed delivery to:" : "📍 NGO delivering to:" %> <strong><%= d.ngoDeliveryLocation.length > 45 ? d.ngoDeliveryLocation.substring(0,45)+'…' : d.ngoDeliveryLocation %></strong>
+                    <% if (d.ngoDeliveryLatitude) { %>
+                      <a href="https://www.openstreetmap.org/?mlat=<%= d.ngoDeliveryLatitude %>&mlon=<%= d.ngoDeliveryLongitude %>#map=16/<%= d.ngoDeliveryLatitude %>/<%= d.ngoDeliveryLongitude %>"
+                         target="_blank" class="map-view-link"><i class="bi bi-box-arrow-up-right me-1"></i>Open map</a>
+                      <button type="button" class="map-view-link ms-1" style="border:none;cursor:pointer;"
+                        onclick="toggleMiniMap(this, <%= d.ngoDeliveryLatitude %>, <%= d.ngoDeliveryLongitude %>)">
+                        <i class="bi bi-map me-1"></i>Preview
+                      </button>
+                    <% } %>
+                  </div>
+                  <% if (d.ngoDeliveryLatitude) { %>
+                    <div class="mini-map-container" style="display:none;margin-top:8px;">
+                      <div class="mini-map-inner" style="height:180px;border-radius:10px;overflow:hidden;border:2px solid #bfdbfe;"></div>
+                    </div>
+                  <% } %>
+                <% } %>
+
+                <!-- Notes thread preview -->
+                <% if (d.notes && d.notes.length > 0) { %>
+                  <div style="margin-top:6px;background:#fef9c3;border-radius:8px;padding:8px 12px;font-size:.78rem;">
+                    <i class="bi bi-chat-text me-1 text-warning"></i>
+                    <strong><%= d.notes[d.notes.length-1].author %>:</strong>
+                    "<%= d.notes[d.notes.length-1].message.substring(0,60) %><%= d.notes[d.notes.length-1].message.length>60?'…':'' %>"
+                    <% if (d.notes.length > 1) { %><span style="color:#9ca3af;"> (+<%= d.notes.length-1 %> more)</span><% } %>
+                  </div>
+                <% } %>
+              </div>
+            </div>
+
+            <div class="donation-item-right">
+              <span class="status-badge status-<%= d.status %>">
+                <% if(d.status==='pending')   { %><i class="bi bi-hourglass-split me-1"></i>Pending
+                <% } else if(d.status==='accepted')  { %><i class="bi bi-check-circle me-1"></i>Accepted
+                <% } else if(d.status==='rejected')  { %><i class="bi bi-x-circle me-1"></i>Rejected
+                <% } else if(d.status==='picked_up') { %><i class="bi bi-truck me-1"></i>In Transit
+                <% } else if(d.status==='delivered') { %><i class="bi bi-patch-check me-1"></i>Delivered
+                <% } else if(d.status==='expired')   { %><i class="bi bi-clock me-1"></i>Expired
+                <% } %>
+              </span>
+
+              <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">
+                <% if (d.status === 'accepted' || d.status === 'picked_up') { %>
+                  <a href="/donor/track/<%= d._id %>" class="btn btn-track">
+                    <i class="bi bi-map me-1"></i>Track NGO
+                  </a>
+                <% } %>
+
+                <% if (d.status === 'delivered') { %>
+                  <div class="delivered-msg"><i class="bi bi-heart-fill text-danger me-1"></i>Thank you!</div>
+                  <!-- Rate NGO button -->
+                  <% const donorRated = d.ratings && d.ratings.some(r => r.byRole === 'donor'); %>
+                  <% if (!donorRated) { %>
+                    <button class="btn-rate" onclick="openRateModal('<%= d._id %>','<%= d.name.replace(/'/g,'') %>')">
+                      <i class="bi bi-star me-1"></i>Rate NGO
+                    </button>
+                  <% } else { %>
+                    <div style="font-size:.75rem;color:#f59e0b;"><i class="bi bi-star-fill me-1"></i>Rated!</div>
+                  <% } %>
+                  <!-- Add note -->
+                  <button class="btn-note" onclick="openNoteModal('<%= d._id %>')">
+                    <i class="bi bi-chat-plus me-1"></i>Add Note
+                  </button>
+                <% } %>
+
+                <% if (d.status === 'rejected' || d.status === 'expired') { %>
+                  <form action="/donor/rerequest/<%= d._id %>" method="POST">
+                    <button type="submit" class="btn-rerequest" title="Re-list this donation for other NGOs">
+                      <i class="bi bi-arrow-repeat me-1"></i>Re-list
+                    </button>
+                  </form>
+                <% } %>
+
+                <% if (d.status === 'accepted' || d.status === 'picked_up') { %>
+                  <button class="btn-note" onclick="openNoteModal('<%= d._id %>')">
+                    <i class="bi bi-chat-plus me-1"></i>Note
+                  </button>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Rate Modal -->
+<div class="modal fade" id="rateModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">⭐ Rate NGO Service</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form id="rateForm" method="POST">
+        <div class="modal-body">
+          <p>Rate the NGO's service for: <strong id="rateFoodName"></strong></p>
+          <div class="star-picker mb-3">
+            <% for(let s=5;s>=1;s--){ %>
+              <input type="radio" name="stars" value="<%= s %>" id="star<%= s %>"/>
+              <label for="star<%= s %>"><i class="bi bi-star-fill"></i></label>
+            <% } %>
+          </div>
+          <textarea name="comment" class="form-control" rows="3" placeholder="Any feedback? (optional)…" style="border-radius:10px;border:2px solid #e5e7eb;"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning">Submit Rating</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Note Modal -->
+<div class="modal fade" id="noteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">💬 Add Note</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form id="noteForm" method="POST">
+        <div class="modal-body">
+          <textarea name="message" class="form-control" rows="4" placeholder="Leave a message for the NGO…" required style="border-radius:10px;border:2px solid #e5e7eb;"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary" style="background:#1a4a2e;border:none;">Send Note</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.btn-rate { background:#fef3c7;color:#92400e;border:2px solid #fbbf24;border-radius:8px;padding:6px 12px;font-size:.8rem;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;width:100%; }
+.btn-rate:hover { background:#fbbf24;color:#fff; }
+.btn-note { background:#e0f2fe;color:#0369a1;border:2px solid #7dd3fc;border-radius:8px;padding:6px 12px;font-size:.8rem;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;width:100%; }
+.btn-note:hover { background:#7dd3fc; }
+.btn-rerequest { background:#ede9fe;color:#5b21b6;border:2px solid #c4b5fd;border-radius:8px;padding:6px 12px;font-size:.8rem;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;width:100%; }
+.btn-rerequest:hover { background:#c4b5fd; }
+
+/* Star picker */
+.star-picker { display:flex;flex-direction:row-reverse;justify-content:flex-end;gap:4px; }
+.star-picker input[type=radio] { display:none; }
+.star-picker label { font-size:1.8rem;cursor:pointer;color:#d1d5db;transition:color .1s; }
+.star-picker input:checked ~ label,
+.star-picker label:hover,
+.star-picker label:hover ~ label { color:#f59e0b; }
+
+.filter-bar { display:flex;gap:10px;flex-wrap:wrap;align-items:center; }
+.filter-bar input,.filter-bar select { border:2px solid #e5e7eb;border-radius:10px;padding:8px 14px;font-size:.85rem;font-family:'DM Sans',sans-serif;background:#fff; }
+.btn-filter { background:#1a4a2e;color:#fff;border:none;border-radius:10px;padding:9px 20px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif; }
+.btn-reset  { background:#f3f4f6;color:#374151;border:none;border-radius:10px;padding:9px 16px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none; }
+</style>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const miniMaps = {};
+function toggleMiniMap(btn, lat, lng) {
+  const infoRow   = btn.closest('.ngo-delivery-info');
+  const container = infoRow.nextElementSibling;
+  if (!container) return;
+  const hidden = container.style.display === 'none';
+  container.style.display = hidden ? 'block' : 'none';
+  btn.innerHTML = hidden ? '<i class="bi bi-x-circle me-1"></i>Hide' : '<i class="bi bi-map me-1"></i>Preview';
+  if (hidden) {
+    const mapEl = container.querySelector('.mini-map-inner');
+    const key = lat+','+lng;
+    if (!miniMaps[key]) {
+      const m = L.map(mapEl, { zoomControl:false, attributionControl:false });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(m);
+      m.setView([lat, lng], 15);
+      L.marker([lat, lng], { icon: L.divIcon({ className:'', html:'<div style="background:#3b82f6;width:22px;height:22px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:11px;">🏠</div>', iconSize:[22,22], iconAnchor:[11,11] }) })
+        .addTo(m).bindPopup('NGO Delivery Point').openPopup();
+      setTimeout(() => m.invalidateSize(), 200);
+      miniMaps[key] = m;
+    } else { setTimeout(() => miniMaps[key].invalidateSize(), 100); }
+  }
+}
+
+function openRateModal(id, name) {
+  document.getElementById('rateFoodName').textContent = name;
+  document.getElementById('rateForm').action = '/donor/rate/' + id;
+  new bootstrap.Modal(document.getElementById('rateModal')).show();
+}
+function openNoteModal(id) {
+  document.getElementById('noteForm').action = '/donor/note/' + id;
+  document.getElementById('noteModal').querySelector('textarea').value = '';
+  new bootstrap.Modal(document.getElementById('noteModal')).show();
+}
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,195 @@
+<%- include('../partials/header', {title: 'Track Donation – FoodBridge'}) %>
+<%- include('../partials/navbar') %>
+
+<div class="page-section">
+  <div class="container py-4">
+    <a href="/donor/history" class="back-link"><i class="bi bi-arrow-left me-2"></i>Back to History</a>
+    <h2 class="section-title mt-2"><i class="bi bi-geo-alt me-2"></i>Live Tracking</h2>
+    <p class="section-subtitle">Track your donation in real time</p>
+
+    <!-- Food Info Card -->
+    <div class="donation-summary-card mb-4">
+      <div class="row align-items-center">
+        <div class="col-auto"><span style="font-size:2rem;">🍱</span></div>
+        <div class="col">
+          <h5 class="mb-1"><%= food.name %></h5>
+          <p class="mb-0 text-muted"><i class="bi bi-box me-1"></i><%= food.quantity %></p>
+          <% if (food.ngoName) { %>
+            <p class="mb-0 text-muted"><i class="bi bi-building me-1"></i>NGO: <strong><%= food.ngoName %></strong></p>
+          <% } %>
+        </div>
+        <div class="col-auto">
+          <span class="status-badge status-<%= food.status %>" id="statusBadge">
+            <%= food.status.replace('_', ' ').toUpperCase() %>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Timeline -->
+    <div class="tracking-timeline mb-4">
+      <div class="timeline-step <%= ['pending','accepted','picked_up','delivered'].includes(food.status) ? 'done' : '' %>">
+        <div class="timeline-dot"><i class="bi bi-check"></i></div>
+        <div class="timeline-label">Submitted</div>
+      </div>
+      <div class="timeline-line"></div>
+      <div class="timeline-step <%= ['accepted','picked_up','delivered'].includes(food.status) ? 'done' : '' %>">
+        <div class="timeline-dot"><i class="bi bi-check"></i></div>
+        <div class="timeline-label">Accepted</div>
+      </div>
+      <div class="timeline-line"></div>
+      <div class="timeline-step <%= ['picked_up','delivered'].includes(food.status) ? 'done' : '' %>">
+        <div class="timeline-dot"><i class="bi bi-truck"></i></div>
+        <div class="timeline-label">Picked Up</div>
+      </div>
+      <div class="timeline-line"></div>
+      <div class="timeline-step <%= food.status === 'delivered' ? 'done' : '' %>">
+        <div class="timeline-dot"><i class="bi bi-heart"></i></div>
+        <div class="timeline-label">Delivered</div>
+      </div>
+    </div>
+
+    <!-- Live Map -->
+    <div class="map-card mb-3">
+      <div class="map-card-header">
+        <h5>
+          <i class="bi bi-broadcast me-2 text-danger"></i>Live Map
+          <span class="live-indicator" id="liveIndicator"><span class="live-dot"></span>LIVE</span>
+        </h5>
+        <span id="lastUpdate" class="text-muted small">Waiting for NGO location…</span>
+      </div>
+      <div id="trackingMap" style="height:420px;"></div>
+    </div>
+
+    <!-- Legend -->
+    <div class="map-legend">
+      <div class="legend-item"><span class="legend-dot" style="background:#22c55e;"></span>NGO Location</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#f97316;"></span>Pickup Point</div>
+      <% if (food.deliveryLatitude || food.ngoDeliveryLatitude) { %>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#3b82f6;"></span>
+          Delivery Point
+          <% if (!food.deliveryLocation && food.ngoDeliveryLocation) { %>
+            <span class="badge" style="background:#dbeafe;color:#1e40af;font-size:.68rem;padding:2px 7px;border-radius:10px;margin-left:4px;">NGO chose</span>
+          <% } %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<script>
+const FOOD_ID    = '<%- food._id %>';
+const pickupLat  = <%- (food.pickupLatitude  != null) ? food.pickupLatitude  : 'null' %>;
+const pickupLng  = <%- (food.pickupLongitude != null) ? food.pickupLongitude : 'null' %>;
+// Donor delivery OR NGO-chosen delivery
+const deliveryLat = <%- (food.deliveryLatitude != null) ? food.deliveryLatitude : (food.ngoDeliveryLatitude != null ? food.ngoDeliveryLatitude : 'null') %>;
+const deliveryLng = <%- (food.deliveryLongitude != null) ? food.deliveryLongitude : (food.ngoDeliveryLongitude != null ? food.ngoDeliveryLongitude : 'null') %>;
+const deliverySource = '<%- food.deliveryLocation ? "Donor" : (food.ngoDeliveryLocation ? "NGO" : "") %>';
+const deliveryLabel  = '<%- (food.deliveryLocation || food.ngoDeliveryLocation || "").replace(/'/g,"") %>';
+
+window.addEventListener('load', function() {
+  const map = L.map('trackingMap');
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(map);
+
+  // Default view Bengaluru
+  map.setView([12.9716, 77.5946], 12);
+
+  function mkIcon(bg, emoji, sz) {
+    sz = sz || 36;
+    return L.divIcon({
+      className: '',
+      html: '<div style="background:' + bg + ';width:' + sz + 'px;height:' + sz + 'px;' +
+            'border-radius:50%;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.3);' +
+            'display:flex;align-items:center;justify-content:center;font-size:' + Math.round(sz*0.44) + 'px;">' +
+            emoji + '</div>',
+      iconSize:[sz,sz], iconAnchor:[sz/2,sz/2], popupAnchor:[0,-(sz/2)]
+    });
+  }
+
+  const iNGO      = mkIcon('#22c55e','🚗', 40);
+  const iPickup   = mkIcon('#f97316','📦', 36);
+  const iDelivery = mkIcon('#3b82f6','🏠', 36);
+
+  let mNGO=null;
+  const staticMarkers = [];
+
+  // Place pickup marker immediately if coords exist
+  if (pickupLat && pickupLng) {
+    var m = L.marker([pickupLat, pickupLng], {icon: iPickup}).addTo(map)
+              .bindPopup('<b>📦 Pickup Location</b>');
+    staticMarkers.push([pickupLat, pickupLng]);
+  }
+  if (deliveryLat && deliveryLng) {
+    const delivPopup = deliverySource === 'NGO'
+      ? '<b>📍 Delivery (NGO chose)</b><br><small>' + deliveryLabel + '</small>'
+      : '<b>🏠 Delivery Location</b><br><small>' + deliveryLabel + '</small>';
+    var m2 = L.marker([deliveryLat, deliveryLng], {icon: iDelivery}).addTo(map)
+               .bindPopup(delivPopup);
+    staticMarkers.push([deliveryLat, deliveryLng]);
+  }
+
+  // Fit to static markers if we have them
+  if (staticMarkers.length === 1) {
+    map.setView(staticMarkers[0], 14);
+  } else if (staticMarkers.length >= 2) {
+    map.fitBounds(L.latLngBounds(staticMarkers), {padding:[50,50]});
+  }
+
+  // Force tile render
+  setTimeout(function(){ map.invalidateSize(); }, 300);
+  setTimeout(function(){ map.invalidateSize(); }, 1000);
+
+  // Poll NGO location every 5 seconds
+  let trackInterval = null;
+
+  function fetchTracking() {
+    fetch('/api/track/' + FOOD_ID)
+      .then(function(r){ return r.json(); })
+      .then(function(data) {
+        if (!data.success) return;
+        const f = data.food;
+
+        // Update status badge
+        const badge = document.getElementById('statusBadge');
+        badge.textContent = f.status.replace('_',' ').toUpperCase();
+        badge.className = 'status-badge status-' + f.status;
+
+        // NGO marker
+        if (f.ngoLatitude && f.ngoLongitude) {
+          const ll = [f.ngoLatitude, f.ngoLongitude];
+          if (!mNGO) {
+            mNGO = L.marker(ll, {icon: iNGO}).addTo(map)
+                    .bindPopup('🚗 NGO Live Location');
+          } else {
+            mNGO.setLatLng(ll);
+          }
+
+          // Fit all
+          const allPts = [ll, ...staticMarkers];
+          if (allPts.length >= 2) map.fitBounds(L.latLngBounds(allPts), {padding:[50,50]});
+          else map.setView(ll, 14);
+
+          const t = new Date(f.ngoLastUpdate);
+          document.getElementById('lastUpdate').textContent =
+            'Updated: ' + t.toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+        }
+
+        if (f.status === 'delivered') {
+          clearInterval(trackInterval);
+          document.getElementById('liveIndicator').innerHTML = '<span style="color:#22c55e;">✅ Delivered!</span>';
+          document.getElementById('lastUpdate').textContent = 'Food has been delivered!';
+        }
+      })
+      .catch(function(e){ console.warn('Track fetch error:', e); });
+  }
+
+  fetchTracking();
+  trackInterval = setInterval(fetchTracking, 5000);
+});
+</script>
+
+<%- include('../partials/footer') %>

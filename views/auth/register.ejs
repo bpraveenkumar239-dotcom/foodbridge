@@ -1,0 +1,112 @@
+<%- include('../partials/header', {title: 'Register – FoodBridge'}) %>
+
+<div class="auth-page">
+  <div class="auth-bg-overlay"></div>
+  <div class="auth-container">
+    <div class="auth-card auth-card-wide">
+      <div class="auth-logo">
+        <span class="auth-logo-icon">🌿</span>
+        <h1 class="auth-title">Join FoodBridge</h1>
+        <p class="auth-subtitle">Make a difference today</p>
+      </div>
+
+      <% if (error) { %>
+        <div class="alert alert-danger alert-sm"><i class="bi bi-exclamation-circle me-2"></i><%= error %></div>
+      <% } %>
+
+      <form action="/register" method="POST" class="auth-form">
+        <!-- Role Selection -->
+        <div class="role-selector mb-4">
+          <p class="role-label">I am a...</p>
+          <div class="role-options">
+            <label class="role-option">
+              <input type="radio" name="role" value="donor" required/>
+              <div class="role-card">
+                <span class="role-icon">🤝</span>
+                <span class="role-name">Donor</span>
+                <span class="role-desc">I have food to share</span>
+              </div>
+            </label>
+            <label class="role-option">
+              <input type="radio" name="role" value="ngo"/>
+              <div class="role-card">
+                <span class="role-icon">🏥</span>
+                <span class="role-name">NGO</span>
+                <span class="role-desc">We collect & distribute</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input type="text" class="form-control" id="name" name="name" placeholder="Full Name" required/>
+              <label for="name">Full Name</label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input type="email" class="form-control" id="email" name="email" placeholder="Email" required/>
+              <label for="email">Email Address</label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input type="password" class="form-control" id="password" name="password" placeholder="Password" required minlength="6"/>
+              <label for="password">Password</label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password" required/>
+              <label for="confirmPassword">Confirm Password</label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input type="tel" class="form-control" id="phone" name="phone" placeholder="Phone"/>
+              <label for="phone">Phone Number</label>
+            </div>
+          </div>
+          <div class="col-md-6 ngo-field" style="display:none;">
+            <div class="form-floating">
+              <input type="text" class="form-control" id="organization" name="organization" placeholder="Organization"/>
+              <label for="organization">Organization Name</label>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="form-floating">
+              <input type="text" class="form-control" id="address" name="address" placeholder="Address"/>
+              <label for="address">Address</label>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-auth w-100 mt-4">
+          <i class="bi bi-person-plus me-2"></i>Create Account
+        </button>
+      </form>
+
+      <div class="auth-divider"><span>Already have an account?</span></div>
+      <a href="/login" class="btn btn-outline-auth w-100">Sign In</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('input[name="role"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+      const ngoFields = document.querySelectorAll('.ngo-field');
+      ngoFields.forEach(f => f.style.display = this.value === 'ngo' ? 'block' : 'none');
+    });
+  });
+  document.querySelectorAll('.role-option input').forEach(input => {
+    input.addEventListener('change', function() {
+      document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+      this.closest('.role-card').classList.add('selected');
+    });
+  });
+</script>
+
+<%- include('../partials/footer') %>

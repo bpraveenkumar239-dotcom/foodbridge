@@ -1,0 +1,121 @@
+<%- include('../partials/header', {title: 'Delivery Location – FoodBridge'}) %>
+<%- include('../partials/navbar') %>
+
+<div class="page-section">
+  <div class="container py-5">
+    <div class="section-header">
+      <div class="success-badge-top"><i class="bi bi-check-circle-fill text-success me-2"></i>Donation Submitted!</div>
+      <h2 class="section-title">Add Delivery Location</h2>
+      <p class="section-subtitle">Optionally tell us where the food should be delivered. You can skip this step.</p>
+    </div>
+
+    <div class="donation-summary-card mb-4">
+      <div class="row align-items-center">
+        <div class="col-auto"><span style="font-size:2rem;">🍱</span></div>
+        <div class="col">
+          <h5 class="mb-1"><%= food.name %></h5>
+          <p class="mb-0 text-muted"><i class="bi bi-geo-alt me-1"></i><%= food.pickupLocation %></p>
+        </div>
+        <div class="col-auto"><span class="status-badge status-pending">Pending</span></div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <form action="/donor/delivery/<%= food._id %>" method="POST">
+        <div class="col-12">
+          <label class="form-label">Delivery Location</label>
+          <div class="location-selector">
+            <div class="location-tabs">
+              <button type="button" class="loc-tab active" data-method="manual">
+                <i class="bi bi-keyboard"></i> Type Manually
+              </button>
+              <button type="button" class="loc-tab" data-method="live">
+                <i class="bi bi-geo-alt-fill"></i> Use My Location
+              </button>
+              <button type="button" class="loc-tab" data-method="map">
+                <i class="bi bi-map"></i> Pick on Map
+              </button>
+            </div>
+            <div class="location-input-area mt-3">
+              <input type="text" class="form-control fc-custom" name="deliveryLocation" id="deliveryLocationText"
+                placeholder="Enter delivery address..."/>
+              <input type="hidden" name="deliveryLatitude" id="deliveryLat"/>
+              <input type="hidden" name="deliveryLongitude" id="deliveryLng"/>
+
+              <div id="liveLocationStatus" class="location-status" style="display:none;">
+                <div class="spinner-border spinner-border-sm text-success me-2" role="status"></div>
+                Detecting your location...
+              </div>
+
+              <div id="deliveryMapContainer" class="map-container mt-3" style="display:none;">
+                <div id="deliveryMap" style="height:300px; border-radius:12px;"></div>
+                <p class="map-hint"><i class="bi bi-cursor me-1"></i>Click on the map to set delivery location</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions mt-4">
+          <button type="submit" class="btn btn-primary btn-lg btn-submit">
+            <i class="bi bi-check2-circle me-2"></i>Save Delivery Location
+          </button>
+          <a href="/donor/skip-delivery/<%= food._id %>" class="btn btn-ghost ms-3">
+            <i class="bi bi-skip-forward me-1"></i>Skip this step
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+let deliveryMap = null, deliveryMarker = null;
+
+document.querySelectorAll('.loc-tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.loc-tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+    const method = this.dataset.method;
+    document.getElementById('liveLocationStatus').style.display = 'none';
+    document.getElementById('deliveryMapContainer').style.display = 'none';
+
+    if (method === 'live') {
+      document.getElementById('liveLocationStatus').style.display = 'flex';
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude, lng = pos.coords.longitude;
+        document.getElementById('deliveryLat').value = lat;
+        document.getElementById('deliveryLng').value = lng;
+        reverseGeocode(lat, lng, 'deliveryLocationText');
+        document.getElementById('liveLocationStatus').style.display = 'none';
+      }, () => {
+        document.getElementById('liveLocationStatus').innerHTML = '<i class="bi bi-x-circle text-danger me-2"></i>Location access denied.';
+      });
+    } else if (method === 'map') {
+      document.getElementById('deliveryMapContainer').style.display = 'block';
+      if (!deliveryMap) {
+        deliveryMap = L.map('deliveryMap').setView([20.5937, 78.9629], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(deliveryMap);
+        deliveryMap.on('click', function(e) {
+          const lat = e.latlng.lat, lng = e.latlng.lng;
+          if (deliveryMarker) deliveryMap.removeLayer(deliveryMarker);
+          deliveryMarker = L.marker([lat, lng]).addTo(deliveryMap);
+          document.getElementById('deliveryLat').value = lat;
+          document.getElementById('deliveryLng').value = lng;
+          reverseGeocode(lat, lng, 'deliveryLocationText');
+        });
+      } else {
+        setTimeout(() => deliveryMap.invalidateSize(), 100);
+      }
+    }
+  });
+});
+
+function reverseGeocode(lat, lng, inputId) {
+  fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+    .then(r => r.json())
+    .then(data => { document.getElementById(inputId).value = data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`; })
+    .catch(() => { document.getElementById(inputId).value = `${lat.toFixed(4)}, ${lng.toFixed(4)}`; });
+}
+</script>
+
+<%- include('../partials/footer') %>

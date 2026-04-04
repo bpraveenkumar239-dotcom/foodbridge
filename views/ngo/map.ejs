@@ -1,0 +1,127 @@
+<%- include('../partials/header', {title: 'Donation Map – FoodBridge'}) %>
+<%- include('../partials/navbar') %>
+
+<style>
+  .map-page { display:flex; flex-direction:column; height:calc(100vh - 64px); }
+  #donationMap { flex:1; }
+  .map-sidebar {
+    position:absolute; top:80px; right:16px; width:300px; max-height:70vh;
+    background:#fff; border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,.15);
+    overflow-y:auto; z-index:500; padding:16px;
+  }
+  .map-sidebar h6 { font-weight:700; margin-bottom:12px; font-size:.9rem; }
+  .map-item { border:2px solid #e5e7eb; border-radius:10px; padding:12px; margin-bottom:8px; cursor:pointer; transition:all .2s; }
+  .map-item:hover { border-color:#1a4a2e; background:#f0fdf4; }
+  .map-item-name { font-weight:700; font-size:.88rem; color:#1a4a2e; }
+  .map-item-meta { font-size:.75rem; color:#6b7280; margin-top:3px; }
+  .cat-badge { font-size:.68rem; padding:2px 8px; border-radius:10px; font-weight:700; background:#e8f5ee; color:#1a4a2e; }
+  .exp-warn   { font-size:.68rem; color:#dc2626; font-weight:600; }
+  .filter-bar-map { position:absolute; top:80px; left:16px; z-index:500; display:flex; gap:8px; flex-wrap:wrap; }
+  .filter-btn { background:#fff; border:2px solid #e5e7eb; border-radius:10px; padding:6px 14px; font-size:.8rem; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s; }
+  .filter-btn.active { background:#1a4a2e; color:#fff; border-color:#1a4a2e; }
+  @media(max-width:768px){ .map-sidebar{ display:none; } }
+</style>
+
+<div style="position:relative;">
+  <div id="donationMap" style="height:calc(100vh - 70px);width:100%;"></div>
+
+  <!-- Category filters -->
+  <div class="filter-bar-map">
+    <button class="filter-btn active" data-cat="all">🍽️ All</button>
+    <button class="filter-btn" data-cat="cooked">🥘 Cooked</button>
+    <button class="filter-btn" data-cat="raw">🥦 Raw</button>
+    <button class="filter-btn" data-cat="packaged">📦 Packaged</button>
+    <button class="filter-btn" data-cat="bakery">🥖 Bakery</button>
+    <button class="filter-btn" data-cat="fruits_veg">🍎 Fruits/Veg</button>
+  </div>
+
+  <!-- Sidebar list -->
+  <div class="map-sidebar">
+    <h6><i class="bi bi-list-ul me-1"></i>Pending Donations (<span id="mapCount">0</span>)</h6>
+    <div id="sidebarList"></div>
+  </div>
+</div>
+
+<script>
+const ALL_DONATIONS = <%- JSON.stringify(donations) %>;
+
+const map = L.map('donationMap').setView([20.5937, 78.9629], 5);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap', maxZoom:19 }).addTo(map);
+
+const catColors = { cooked:'#f97316', raw:'#22c55e', packaged:'#3b82f6', bakery:'#f59e0b', fruits_veg:'#10b981', dairy:'#8b5cf6', other:'#6b7280' };
+const catEmojis = { cooked:'🥘', raw:'🥦', packaged:'📦', bakery:'🥖', fruits_veg:'🍎', dairy:'🥛', other:'🍱' };
+
+function mkIcon(cat, expired) {
+  const color = expired ? '#ef4444' : (catColors[cat] || '#6b7280');
+  const emoji = catEmojis[cat] || '🍱';
+  return L.divIcon({
+    className: '',
+    html: `<div style="background:${color};width:38px;height:38px;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 12px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:16px;">${emoji}</div>`,
+    iconSize:[38,38], iconAnchor:[19,19], popupAnchor:[0,-22]
+  });
+}
+
+let markers = [], currentCat = 'all';
+
+function renderMarkers(cat) {
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+  const filtered = cat === 'all' ? ALL_DONATIONS : ALL_DONATIONS.filter(d => d.category === cat);
+  document.getElementById('mapCount').textContent = filtered.length;
+
+  const listHtml = filtered.map(d => {
+    const soon = d.expiresAt && (new Date(d.expiresAt) - Date.now()) < 2*3600*1000;
+    return `<div class="map-item" onclick="flyTo(${d.pickupLatitude},${d.pickupLongitude})">
+      <div class="map-item-name">${d.name}</div>
+      <div class="map-item-meta"><i class="bi bi-box me-1"></i>${d.quantity} · <span class="cat-badge">${catEmojis[d.category]||'🍱'} ${d.category||'other'}</span></div>
+      <div class="map-item-meta"><i class="bi bi-person me-1"></i>${d.donorName||'Donor'}</div>
+      ${soon ? `<div class="exp-warn">⏰ Expires soon!</div>` : ''}
+    </div>`;
+  }).join('');
+  document.getElementById('sidebarList').innerHTML = listHtml || '<p style="color:#9ca3af;font-size:.82rem;">No donations in this category.</p>';
+
+  filtered.forEach(d => {
+    if (!d.pickupLatitude || !d.pickupLongitude) return;
+    const expiring = d.expiresAt && (new Date(d.expiresAt) - Date.now()) < 2*3600*1000;
+    const m = L.marker([d.pickupLatitude, d.pickupLongitude], { icon: mkIcon(d.category, expiring) }).addTo(map);
+    const expiryLine = d.expiresAt ? `<br><small style="color:#f59e0b;">⏰ Expires: ${new Date(d.expiresAt).toLocaleString('en-IN')}</small>` : '';
+    const tagsLine   = d.tags && d.tags.length ? `<br><small>${d.tags.map(t=>'#'+t).join(' ')}</small>` : '';
+    m.bindPopup(`
+      <div style="min-width:200px;">
+        <b style="font-size:1rem;">${catEmojis[d.category]||'🍱'} ${d.name}</b><br>
+        <span style="font-size:.82rem;color:#6b7280;">${d.quantity} · ${d.donorName}</span>
+        ${expiryLine}${tagsLine}<br>
+        <small style="color:#9ca3af;">${(d.pickupLocation||'').substring(0,60)}</small><br><br>
+        <a href="/ngo/requests" style="background:#1a4a2e;color:#fff;padding:6px 14px;border-radius:8px;text-decoration:none;font-size:.82rem;font-weight:600;">Accept Donation →</a>
+      </div>
+    `);
+    markers.push(m);
+  });
+
+  if (markers.length > 0) {
+    const group = L.featureGroup(markers);
+    map.fitBounds(group.getBounds(), { padding:[40,40] });
+  }
+}
+
+function flyTo(lat, lng) {
+  map.flyTo([lat, lng], 15, { duration: 1.2 });
+  markers.forEach(m => {
+    if (Math.abs(m.getLatLng().lat - lat) < 0.0001) m.openPopup();
+  });
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    currentCat = this.dataset.cat;
+    renderMarkers(currentCat);
+  });
+});
+
+renderMarkers('all');
+setTimeout(() => map.invalidateSize(), 300);
+</script>
+
+<%- include('../partials/footer') %>

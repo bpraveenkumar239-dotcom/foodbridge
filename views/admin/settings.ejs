@@ -1,0 +1,101 @@
+<%- include('layout-start', {title:'Settings – Admin', pageTitle:'Settings', currentPage:'settings'}) %>
+
+<% if(msg){ %><div class="alert alert-success mb-4"><i class="bi bi-check-circle me-2"></i><%= msg %></div><% } %>
+<% if(err){ %><div class="alert alert-danger  mb-4"><i class="bi bi-exclamation-circle me-2"></i><%= err %></div><% } %>
+
+<div class="row g-4">
+  <!-- Change Password -->
+  <div class="col-lg-5">
+    <div class="admin-card">
+      <div class="admin-card-title"><i class="bi bi-key text-warning"></i>Change My Password</div>
+      <form action="/admin/settings/change-password" method="POST">
+        <div class="mb-3">
+          <label class="form-label fw-bold" style="font-size:.82rem;">Current Password</label>
+          <input type="password" name="currentPassword" class="form-control" required style="border-radius:10px;border:2px solid #e5e7eb;"/>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-bold" style="font-size:.82rem;">New Password (min 6 chars)</label>
+          <input type="password" name="newPassword" class="form-control" required minlength="6" style="border-radius:10px;border:2px solid #e5e7eb;"/>
+        </div>
+        <div class="mb-4">
+          <label class="form-label fw-bold" style="font-size:.82rem;">Confirm New Password</label>
+          <input type="password" name="confirmNew" class="form-control" required minlength="6" style="border-radius:10px;border:2px solid #e5e7eb;"/>
+        </div>
+        <button type="submit" class="btn btn-warning w-100" style="border-radius:10px;font-family:'DM Sans',sans-serif;font-weight:600;">
+          <i class="bi bi-key me-2"></i>Update Password
+        </button>
+      </form>
+    </div>
+
+    <!-- Admins list -->
+    <div class="admin-card">
+      <div class="admin-card-title"><i class="bi bi-shield-check text-purple"></i>Admin Accounts</div>
+      <% admins.forEach(a => { %>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f3f4f6;">
+          <div style="width:36px;height:36px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">👤</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:.88rem;"><%= a.name %></div>
+            <div style="font-size:.75rem;color:#9ca3af;"><%= a.email %></div>
+          </div>
+          <div style="font-size:.72rem;color:#6b7280;white-space:nowrap;">
+            <%= new Date(a.createdAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) %>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- Create New Admin -->
+  <div class="col-lg-4">
+    <div class="admin-card" style="border:2px solid #ede9fe;">
+      <div class="admin-card-title" style="color:#7c3aed;"><i class="bi bi-person-plus"></i>Create Admin Account</div>
+      <p style="font-size:.82rem;color:#6b7280;">Create a new administrator with full access.</p>
+      <form action="/admin/settings/create-admin" method="POST">
+        <div class="mb-3">
+          <label class="form-label fw-bold" style="font-size:.82rem;">Full Name</label>
+          <input type="text" name="name" class="form-control" required placeholder="Admin Name" style="border-radius:10px;border:2px solid #e5e7eb;"/>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-bold" style="font-size:.82rem;">Email Address</label>
+          <input type="email" name="email" class="form-control" required placeholder="admin@example.com" style="border-radius:10px;border:2px solid #e5e7eb;"/>
+        </div>
+        <div class="mb-4">
+          <label class="form-label fw-bold" style="font-size:.82rem;">Password</label>
+          <input type="password" name="password" class="form-control" required minlength="6" placeholder="Min 6 characters" style="border-radius:10px;border:2px solid #e5e7eb;"/>
+        </div>
+        <button type="submit" class="btn w-100" style="background:#7c3aed;color:#fff;border-radius:10px;font-family:'DM Sans',sans-serif;font-weight:600;">
+          <i class="bi bi-person-plus me-2"></i>Create Admin
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Info card -->
+  <div class="col-lg-3">
+    <div class="admin-card" style="background:linear-gradient(135deg,#1a4a2e,#2d7a4f);color:#fff;border:none;">
+      <div style="font-size:2rem;margin-bottom:12px;">🛡️</div>
+      <h5 style="font-family:'Playfair Display',serif;">Admin Capabilities</h5>
+      <ul style="font-size:.82rem;opacity:.85;padding-left:16px;margin-top:12px;line-height:2;">
+        <li>View all users & donations</li>
+        <li>Ban / unban accounts</li>
+        <li>Delete users & donations</li>
+        <li>Edit user profiles</li>
+        <li>Reset any password</li>
+        <li>Override donation status</li>
+        <li>View analytics & charts</li>
+        <li>Create more admins</li>
+      </ul>
+    </div>
+
+    <div class="admin-card mt-0" style="background:#fffbeb;border:2px solid #fbbf24;">
+      <div style="font-size:1.5rem;margin-bottom:8px;">⚠️</div>
+      <div style="font-size:.82rem;color:#92400e;font-weight:600;">First-time Setup</div>
+      <p style="font-size:.78rem;color:#92400e;margin-top:6px;margin-bottom:0;">
+        Create your admin account by running this in your terminal once:<br/>
+        <code style="background:rgba(0,0,0,.1);padding:2px 6px;border-radius:4px;font-size:.72rem;">node scripts/create-admin.js</code>
+      </p>
+    </div>
+  </div>
+</div>
+
+<%- include('layout-end') %>

@@ -1,0 +1,98 @@
+<%- include('layout-start', {title:'Donations – Admin', pageTitle:'Donation Management', currentPage:'donations'}) %>
+
+<form method="GET" action="/admin/donations" class="filter-bar">
+  <input type="text" name="search" placeholder="🔍 Food name, donor, NGO…" value="<%= query.search||'' %>"/>
+  <select name="status">
+    <option value="">All Status</option>
+    <option value="pending"   <%=query.status==='pending'  ?'selected':''%>>Pending</option>
+    <option value="accepted"  <%=query.status==='accepted' ?'selected':''%>>Accepted</option>
+    <option value="picked_up" <%=query.status==='picked_up'?'selected':''%>>In Transit</option>
+    <option value="delivered" <%=query.status==='delivered'?'selected':''%>>Delivered</option>
+    <option value="rejected"  <%=query.status==='rejected' ?'selected':''%>>Rejected</option>
+  </select>
+  <button type="submit" class="btn-filter"><i class="bi bi-search me-1"></i>Search</button>
+  <a href="/admin/donations" class="btn-reset">Reset</a>
+  <span style="margin-left:auto;font-size:.82rem;color:#6b7280;"><%= total %> donation<%= total!==1?"s":"" %></span><a href="/admin/export/donations" style="background:#22c55e;color:#fff;border:none;border-radius:10px;padding:9px 18px;font-size:.85rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px;"><i class="bi bi-download"></i>Export CSV</a>
+</form>
+
+<div class="admin-card" style="padding:0;overflow:hidden;">
+  <% if(donations.length === 0) { %>
+    <div style="text-align:center;padding:60px;color:#9ca3af;">
+      <div style="font-size:3rem;">📭</div><p>No donations found.</p>
+    </div>
+  <% } else { %>
+    <div style="overflow-x:auto;">
+      <table class="admin-table">
+        <thead><tr>
+          <th>Food</th><th>Donor</th><th>NGO</th><th>Pickup Location</th><th>Status</th><th>Date</th><th>Actions</th>
+        </tr></thead>
+        <tbody>
+          <% donations.forEach(d => { %>
+          <tr>
+            <td>
+              <div style="font-weight:600;"><%= d.name %></div>
+              <div style="font-size:.75rem;color:#9ca3af;"><%= d.quantity %></div>
+            </td>
+            <td style="font-size:.85rem;"><%= d.donorName||'—' %><br>
+              <% if(d.donorPhone){ %><a href="tel:<%= d.donorPhone %>" style="font-size:.75rem;color:#1a4a2e;"><i class="bi bi-telephone me-1"></i><%= d.donorPhone %></a><% } %>
+            </td>
+            <td style="font-size:.85rem;"><%= d.ngoName||'<span style="color:#d1d5db;">Unassigned</span>' %></td>
+            <td style="font-size:.78rem;color:#6b7280;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              <%= d.pickupLocation %>
+            </td>
+            <td><span class="status-badge status-<%= d.status %>"><%= d.status.replace('_',' ') %></span></td>
+            <td style="font-size:.78rem;color:#6b7280;white-space:nowrap;">
+              <%= new Date(d.createdAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) %>
+            </td>
+            <td>
+              <div style="display:flex;gap:6px;">
+                <a href="/admin/donations/<%= d._id %>" class="btn-admin-sm btn-info-sm"><i class="bi bi-eye"></i> View</a>
+                <button class="btn-admin-sm btn-danger-sm" onclick="confirmDeleteDonation('<%= d._id %>','<%= d.name.replace(/'/g,'') %>')">
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<% const totalPages = Math.ceil(total/limit); %>
+<% if(totalPages > 1) { %>
+  <div class="admin-pagination">
+    <a href="?<%= new URLSearchParams({...query, page: page-1}).toString() %>" class="<%= page<=1?'disabled':'' %>">← Prev</a>
+    <% for(let p=1;p<=totalPages;p++) { %>
+      <a href="?<%= new URLSearchParams({...query, page: p}).toString() %>" class="<%= p===page?'active':'' %>"><%= p %></a>
+    <% } %>
+    <a href="?<%= new URLSearchParams({...query, page: page+1}).toString() %>" class="<%= page>=totalPages?'disabled':'' %>">Next →</a>
+  </div>
+<% } %>
+
+<div class="modal fade" id="deleteDonationModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">🗑️ Delete Donation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body"><p>Permanently delete donation: <strong id="deleteDonName"></strong>?</p></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <form id="deleteDonForm" method="POST" style="display:inline;">
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function confirmDeleteDonation(id, name) {
+  document.getElementById('deleteDonName').textContent = name;
+  document.getElementById('deleteDonForm').action = '/admin/donations/' + id + '/delete';
+  new bootstrap.Modal(document.getElementById('deleteDonationModal')).show();
+}
+</script>
+
+<%- include('layout-end') %>

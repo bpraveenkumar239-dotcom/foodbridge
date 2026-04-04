@@ -1,0 +1,18 @@
+name: Deploy FoodBridge
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to Render
+        run: |
+          echo "Push to main triggers Render auto-deploy"
+          echo "Render watches GitHub repo and redeploys automatically"
+          echo "No extra steps needed — Render handles it"

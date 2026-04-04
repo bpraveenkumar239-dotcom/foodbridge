@@ -1,0 +1,164 @@
+<%- include('layout-start', {title:'Analytics – Admin', pageTitle:'Analytics', currentPage:'analytics'}) %>
+
+<div class="row g-4 mb-4">
+  <div class="col-md-3">
+    <div class="admin-card text-center" style="border-left:4px solid #22c55e;">
+      <div style="font-size:2.2rem;">⏱️</div>
+      <div style="font-size:1.8rem;font-weight:700;font-family:'Playfair Display',serif;color:#1a4a2e;"><%= avgDeliveryHrs %> hrs</div>
+      <div style="font-size:.75rem;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;">Avg Delivery Time</div>
+    </div>
+  </div>
+  <div class="col-md-9">
+    <div class="admin-card" style="height:100%;">
+      <div class="admin-card-title"><i class="bi bi-info-circle text-primary"></i>Quick Insights</div>
+      <div class="row g-3" style="font-size:.85rem;">
+        <% const total = statusBreakdown.reduce((a,s)=>a+s.count,0); %>
+        <% const delivered = statusBreakdown.find(s=>s._id==='delivered'); %>
+        <% const rejected  = statusBreakdown.find(s=>s._id==='rejected'); %>
+        <div class="col-md-4">
+          <div style="background:#f0fdf4;border-radius:10px;padding:14px;">
+            <div style="font-size:.7rem;text-transform:uppercase;color:#065f46;font-weight:700;">Delivery Rate</div>
+            <div style="font-size:1.6rem;font-weight:700;color:#22c55e;">
+              <%= total > 0 ? Math.round((delivered ? delivered.count : 0)/total*100) : 0 %>%
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div style="background:#fee2e2;border-radius:10px;padding:14px;">
+            <div style="font-size:.7rem;text-transform:uppercase;color:#991b1b;font-weight:700;">Rejection Rate</div>
+            <div style="font-size:1.6rem;font-weight:700;color:#ef4444;">
+              <%= total > 0 ? Math.round((rejected ? rejected.count : 0)/total*100) : 0 %>%
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div style="background:#eff6ff;border-radius:10px;padding:14px;">
+            <div style="font-size:.7rem;text-transform:uppercase;color:#1e40af;font-weight:700;">Total Processed</div>
+            <div style="font-size:1.6rem;font-weight:700;color:#3b82f6;"><%= total %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Daily donations -->
+  <div class="col-lg-8">
+    <div class="admin-card">
+      <div class="admin-card-title"><i class="bi bi-graph-up text-success"></i>Daily Donations – Last 30 Days</div>
+      <canvas id="dailyChart" height="120"></canvas>
+    </div>
+  </div>
+
+  <!-- Status pie -->
+  <div class="col-lg-4">
+    <div class="admin-card">
+      <div class="admin-card-title"><i class="bi bi-pie-chart text-warning"></i>Status Distribution</div>
+      <canvas id="statusPie" height="220"></canvas>
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:6px;">
+        <% statusBreakdown.forEach(s => { %>
+          <div style="display:flex;justify-content:space-between;font-size:.82rem;padding:5px 0;border-bottom:1px solid #f3f4f6;">
+            <span class="status-badge status-<%= s._id %>"><%= s._id.replace('_',' ') %></span>
+            <strong><%= s.count %></strong>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Donors -->
+  <div class="col-lg-6">
+    <div class="admin-card">
+      <div class="admin-card-title"><i class="bi bi-trophy text-warning"></i>Top Donors</div>
+      <% if(topDonors.length === 0) { %>
+        <p class="text-muted text-center py-3">No data yet</p>
+      <% } else { %>
+        <% topDonors.forEach((d,i) => { %>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f3f4f6;">
+            <div style="width:30px;height:30px;border-radius:50%;background:<%= i<3?['#fbbf24','#d1d5db','#cd7f32'][i]:'#e5e7eb'%>;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0;">
+              <%= i+1 %>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= d.name || d._id %></div>
+              <div style="font-size:.75rem;color:#9ca3af;"><%= d._id %></div>
+            </div>
+            <div style="background:#e8f5ee;color:#1a4a2e;padding:3px 12px;border-radius:12px;font-weight:700;font-size:.82rem;">
+              <%= d.count %> donations
+            </div>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Top NGOs -->
+  <div class="col-lg-6">
+    <div class="admin-card">
+      <div class="admin-card-title"><i class="bi bi-award text-primary"></i>Top NGOs (by deliveries)</div>
+      <% if(topNGOs.length === 0) { %>
+        <p class="text-muted text-center py-3">No data yet</p>
+      <% } else { %>
+        <% topNGOs.forEach((n,i) => { %>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f3f4f6;">
+            <div style="width:30px;height:30px;border-radius:50%;background:<%= i<3?['#fbbf24','#d1d5db','#cd7f32'][i]:'#e5e7eb'%>;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0;">
+              <%= i+1 %>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= n.name || n._id %></div>
+              <div style="font-size:.75rem;color:#9ca3af;"><%= n._id %></div>
+            </div>
+            <div style="background:#dbeafe;color:#1e40af;padding:3px 12px;border-radius:12px;font-weight:700;font-size:.82rem;">
+              <%= n.count %> delivered
+            </div>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- User registration trend -->
+  <div class="col-12">
+    <div class="admin-card">
+      <div class="admin-card-title"><i class="bi bi-person-plus text-success"></i>User Registrations – Last 30 Days</div>
+      <canvas id="regChart" height="80"></canvas>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const dailyLabels = <%- JSON.stringify(dailyRaw.map(d=>d._id)) %>;
+const dailyCounts = <%- JSON.stringify(dailyRaw.map(d=>d.count)) %>;
+
+new Chart(document.getElementById('dailyChart'),{
+  type:'line',
+  data:{labels:dailyLabels,datasets:[{label:'Donations',data:dailyCounts,
+    borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.12)',fill:true,tension:.4,
+    pointBackgroundColor:'#22c55e',pointRadius:4}]},
+  options:{responsive:true,plugins:{legend:{display:false}},
+    scales:{y:{beginAtZero:true,ticks:{stepSize:1},grid:{color:'#f3f4f6'}},x:{grid:{display:false},ticks:{maxTicksLimit:10}}}}
+});
+
+const statusLabels = <%- JSON.stringify(statusBreakdown.map(s=>s._id.replace('_',' '))) %>;
+const statusCounts = <%- JSON.stringify(statusBreakdown.map(s=>s.count)) %>;
+const statusColors  = {'pending':'#fbbf24','accepted':'#06b6d4','picked up':'#8b5cf6','delivered':'#22c55e','rejected':'#ef4444'};
+new Chart(document.getElementById('statusPie'),{
+  type:'doughnut',
+  data:{labels:statusLabels,datasets:[{data:statusCounts,
+    backgroundColor:statusLabels.map(l=>statusColors[l]||'#d1d5db'),borderWidth:3,borderColor:'#fff'}]},
+  options:{responsive:true,plugins:{legend:{display:false}},cutout:'65%'}
+});
+
+const regLabels = <%- JSON.stringify(regRaw.map(r=>r._id)) %>;
+const regCounts = <%- JSON.stringify(regRaw.map(r=>r.count)) %>;
+new Chart(document.getElementById('regChart'),{
+  type:'bar',
+  data:{labels:regLabels,datasets:[{label:'Registrations',data:regCounts,
+    backgroundColor:'rgba(59,130,246,.75)',borderColor:'#3b82f6',borderWidth:2,borderRadius:6}]},
+  options:{responsive:true,plugins:{legend:{display:false}},
+    scales:{y:{beginAtZero:true,ticks:{stepSize:1},grid:{color:'#f3f4f6'}},x:{grid:{display:false},ticks:{maxTicksLimit:10}}}}
+});
+</script>
+
+<%- include('layout-end') %>

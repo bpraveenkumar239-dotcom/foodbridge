@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Navigate – FoodBridge</title>
+  <link rel="manifest" href="/manifest.json"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    html,body{margin:0;padding:0;font-family:'DM Sans',sans-serif;background:#f0f4f0;}
+    .nav-wrap{padding:16px 0 40px;}
+
+    .phase-banner{border-radius:14px;padding:16px 22px;display:flex;align-items:center;gap:14px;margin-bottom:16px;transition:all .4s;}
+    .phase-pickup  {background:linear-gradient(90deg,#fff7ed,#fef3c7);border:2px solid #fbbf24;color:#92400e;}
+    .phase-delivery{background:linear-gradient(90deg,#eff6ff,#dbeafe);border:2px solid #60a5fa;color:#1e40af;}
+    .phase-done    {background:linear-gradient(90deg,#f0fdf4,#dcfce7);border:2px solid #4ade80;color:#14532d;}
+    .phase-icon{font-size:2.2rem;flex-shrink:0;}
+    .phase-text h6{margin:0;font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;opacity:.7;}
+    .phase-text p {margin:0;font-size:1rem;font-weight:700;}
+
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin-bottom:16px;}
+    .scard{background:#fff;border-radius:12px;padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,.07);}
+    .scard-pickup  {border-left:4px solid #f97316;}
+    .scard-delivery{border-left:4px solid #3b82f6;}
+    .scard-eta     {border-left:4px solid #8b5cf6;}
+    .scard-gps     {border-left:4px solid #22c55e;}
+    .scard-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#6b7280;margin-bottom:4px;}
+    .scard-val  {font-size:1.35rem;font-weight:700;font-family:'Playfair Display',serif;color:#1a4a2e;line-height:1.1;min-height:32px;display:flex;align-items:center;}
+    .scard-sub  {font-size:.7rem;color:#9ca3af;margin-top:2px;}
+
+    /* Map & Street View tabs */
+    .map-shell{background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.1);margin-bottom:14px;}
+    .map-tabs-bar{display:flex;border-bottom:2px solid #f3f4f6;}
+    .map-tab-btn{flex:1;padding:12px;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.88rem;cursor:pointer;color:#6b7280;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+    .map-tab-btn.active{color:#1a4a2e;border-bottom:3px solid #1a4a2e;background:#f9fafb;}
+    .map-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #f3f4f6;flex-wrap:wrap;gap:8px;}
+    .map-header h5{margin:0;font-size:.95rem;font-family:'DM Sans',sans-serif;}
+    #gpsStatus{font-size:.78rem;padding:5px 14px;border-radius:20px;background:#f3f4f6;color:#4b5563;}
+    #gpsStatus.live{background:#dcfce7;color:#166534;}
+    #gpsStatus.err {background:#fee2e2;color:#991b1b;}
+
+    #ngoMap{width:100%;height:460px;display:block;}
+    #streetViewContainer{width:100%;height:460px;display:none;background:#111;position:relative;}
+    #streetViewIframe{width:100%;height:100%;border:none;}
+    .sv-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;gap:12px;font-family:'DM Sans',sans-serif;}
+    .sv-click-hint{font-size:.85rem;color:rgba(255,255,255,.6);text-align:center;padding:0 20px;}
+    @media(max-width:768px){#ngoMap,#streetViewContainer{height:320px;}}
+
+    .inst-panel{background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:14px;max-height:220px;overflow-y:auto;}
+    .inst-panel h6{font-size:.75rem;text-transform:uppercase;letter-spacing:.7px;color:#6b7280;margin-bottom:10px;}
+    .inst-row{display:flex;align-items:flex-start;gap:10px;font-size:.84rem;color:#374151;padding:5px 8px;border-radius:8px;}
+    .inst-num{background:#e5e7eb;color:#374151;border-radius:50%;min-width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;flex-shrink:0;margin-top:1px;}
+    .inst-row.active{background:#f0fdf4;}
+    .inst-row.active .inst-num{background:#22c55e;color:#fff;}
+    .inst-row.done span{color:#d1d5db;text-decoration:line-through;}
+    .inst-row.done .inst-num{background:#f3f4f6;color:#d1d5db;}
+    .inst-divider{font-size:.78rem;font-weight:700;color:#60a5fa;padding:8px 0 4px;border-top:1px dashed #bfdbfe;margin-top:4px;}
+    .no-inst{color:#9ca3af;font-size:.85rem;font-style:italic;margin:0;}
+
+    .leg-pills{display:flex;gap:8px;flex-wrap:wrap;}
+    .leg-pill{font-size:.75rem;font-weight:600;padding:5px 14px;border-radius:20px;}
+    .pill-a{background:#fff7ed;color:#92400e;border:1.5px solid #fbbf24;}
+    .pill-b{background:#eff6ff;color:#1e40af;border:1.5px solid #60a5fa;}
+    .pill-inactive{opacity:.4;}
+
+    .action-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+    .btn-nav{border-radius:12px;font-family:'DM Sans',sans-serif;font-weight:600;padding:13px 28px;font-size:1rem;border:none;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px;}
+    .btn-pickup {background:#22c55e;color:#fff;}
+    .btn-pickup:hover {background:#16a34a;transform:translateY(-1px);}
+    .btn-deliver{background:#3b82f6;color:#fff;}
+    .btn-deliver:hover{background:#2563eb;transform:translateY(-1px);}
+    .btn-recenter{background:#f3f4f6;color:#374151;border:2px solid #e5e7eb;padding:11px 20px;}
+    .btn-recenter:hover{background:#e5e7eb;}
+
+    .map-legend{display:flex;gap:18px;flex-wrap:wrap;background:#fff;padding:12px 18px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:14px;}
+    .legend-item{display:flex;align-items:center;gap:7px;font-size:.82rem;color:#4b5563;}
+    .ldot{width:13px;height:13px;border-radius:50%;flex-shrink:0;}
+    .lline{width:20px;height:5px;border-radius:2px;flex-shrink:0;}
+
+    /* Street View click-on-map cursor indicator */
+    #ngoMap.sv-mode{cursor:crosshair!important;}
+    .sv-mode-hint{background:#1a4a2e;color:#fff;font-size:.78rem;padding:6px 14px;border-radius:20px;display:inline-flex;align-items:center;gap:6px;margin-bottom:8px;}
+  </style>
+</head>
+<body>
+<%- include('../partials/navbar') %>
+
+<div class="container nav-wrap">
+
+  <!-- Top row -->
+  <div class="d-flex align-items-center gap-3 flex-wrap mb-3">
+    <a href="/ngo/requests" class="back-link"><i class="bi bi-arrow-left me-1"></i>Requests</a>
+    <h2 class="section-title mb-0" style="flex:1;font-size:1.6rem;"><i class="bi bi-compass me-2"></i>Live Navigation</h2>
+    <div class="leg-pills">
+      <span class="leg-pill pill-a <%= food.status === 'picked_up' ? 'pill-inactive' : '' %>">🟠 Leg 1: You → Pickup</span>
+      <% if (food.deliveryLocation || food.ngoDeliveryLocation) { %>
+        <span class="leg-pill pill-b <%= food.status === 'accepted' ? 'pill-inactive' : '' %>">🔵 Leg 2: Pickup → Delivery</span>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Donation summary -->
+  <div class="donation-summary-card mb-3">
+    <div class="row align-items-start g-2">
+      <div class="col-auto"><span style="font-size:2rem;">🍱</span></div>
+      <div class="col">
+        <h5 class="mb-0"><%= food.name %> — <strong><%= food.quantity %></strong></h5>
+        <small class="text-muted">
+          <i class="bi bi-person me-1"></i>Donor: <strong><%= food.donorName %></strong>
+          <% if (food.donorPhone) { %>
+            &nbsp;·&nbsp;
+            <a href="tel:<%= food.donorPhone %>" style="color:#1a4a2e;font-weight:600;text-decoration:none;background:#e8f5ee;padding:2px 10px;border-radius:20px;font-size:.82rem;">
+              <i class="bi bi-telephone-fill me-1"></i><%= food.donorPhone %>
+            </a>
+          <% } %>
+        </small><br/>
+        <small class="text-muted"><i class="bi bi-geo-alt me-1"></i>Pickup: <%= food.pickupLocation %></small>
+        <% if (food.deliveryLocation && !food.ngoOverrideDelivery) { %>
+          <br/><small class="text-success"><i class="bi bi-send-check me-1"></i>Delivery (donor): <%= food.deliveryLocation %></small>
+        <% } %>
+        <% if (food.ngoDeliveryLocation) { %>
+          <br/><small class="<%= food.ngoOverrideDelivery ? 'text-warning' : 'text-primary' %>">
+            <i class="bi bi-<%= food.ngoOverrideDelivery ? 'arrow-repeat' : 'pin-map' %> me-1"></i>
+            Delivery (<%= food.ngoOverrideDelivery ? 'you changed donor\'s' : 'you chose' %>): <%= food.ngoDeliveryLocation %>
+            <a href="/ngo/set-delivery/<%= food._id %>" style="font-size:.75rem;color:#1a4a2e;font-weight:700;">[change]</a>
+          </small>
+        <% } else if (!food.deliveryLocation) { %>
+          <br/><small style="color:#f59e0b;"><i class="bi bi-exclamation-triangle me-1"></i>No delivery set —
+            <a href="/ngo/set-delivery/<%= food._id %>" style="color:#d97706;font-weight:700;">Set delivery</a>
+          </small>
+        <% } %>
+        <% if (!food.ngoDeliveryLocation && food.deliveryLocation) { %>
+          <br/><small style="color:#6b7280;font-size:.75rem;">
+            <a href="/ngo/set-delivery/<%= food._id %>" style="color:#7c3aed;font-weight:600;"><i class="bi bi-arrow-repeat me-1"></i>Change donor's delivery location</a>
+          </small>
+        <% } %>
+      </div>
+      <div class="col-auto">
+        <span id="statusBadgeTop" class="status-badge status-<%= food.status %>"><%= food.status.replace('_',' ').toUpperCase() %></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase banner -->
+  <div id="phaseBanner" class="phase-banner <%= food.status==='accepted'?'phase-pickup':food.status==='picked_up'?'phase-delivery':'phase-done' %>">
+    <span class="phase-icon"><%= food.status==='accepted'?'📦':food.status==='picked_up'?'🚚':'✅' %></span>
+    <div class="phase-text">
+      <h6><%= food.status==='accepted'?'PHASE 1 OF 2 — NAVIGATE TO PICKUP':food.status==='picked_up'?'PHASE 2 OF 2 — NAVIGATE TO DELIVERY':'COMPLETE' %></h6>
+      <p id="phaseDesc">
+        <% if (food.status==='accepted') { %>Head to pickup and collect the food from the donor<% } %>
+        <% if (food.status==='picked_up') { %>Food collected! Now head to delivery location<% } %>
+        <% if (food.status==='delivered') { %>Donation successfully delivered! 🎉<% } %>
+      </p>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stat-grid">
+    <div class="scard scard-pickup">
+      <div class="scard-label"><i class="bi bi-geo-alt me-1"></i>
+        <%= food.status === 'accepted' ? 'You → Pickup' : 'Pickup (done)' %>
+      </div>
+      <div class="scard-val" id="distPickup">
+        <% if (food.status === 'picked_up' || food.status === 'delivered') { %>
+          <span style="color:#22c55e;font-size:1rem;">✅ Picked up</span>
+        <% } else { %>
+          <div class="spinner-border spinner-border-sm text-warning"></div>
+        <% } %>
+      </div>
+      <div class="scard-sub" id="etaPickup"><%= food.status==='accepted'?'Waiting for GPS…':'' %></div>
+    </div>
+    <div class="scard scard-delivery">
+      <div class="scard-label"><i class="bi bi-send me-1"></i>Pickup → Delivery</div>
+      <div class="scard-val" id="distDelivery">
+        <% const hasDelivery = food.deliveryLocation || food.ngoDeliveryLocation; %>
+        <% if (!hasDelivery) { %>
+          <a href="/ngo/set-delivery/<%= food._id %>" style="font-size:.78rem;color:#f59e0b;font-weight:600;">⚠️ Set delivery</a>
+        <% } else if (food.status === 'accepted') { %>
+          <span style="font-size:.8rem;color:#9ca3af;">After pickup…</span>
+        <% } else { %>
+          <div class="spinner-border spinner-border-sm text-primary"></div>
+        <% } %>
+      </div>
+      <div class="scard-sub" id="etaDelivery">
+        <% if (food.ngoDeliveryLocation && !food.deliveryLocation) { %><span style="color:#3b82f6;">📍 You chose</span><% } %>
+        <% if (food.ngoOverrideDelivery) { %><span style="color:#f59e0b;">⚠️ Override</span><% } %>
+      </div>
+    </div>
+    <div class="scard scard-eta">
+      <div class="scard-label"><i class="bi bi-clock me-1"></i>ETA</div>
+      <div class="scard-val" id="totalEta">—</div>
+      <div class="scard-sub">estimated drive</div>
+    </div>
+    <div class="scard scard-gps">
+      <div class="scard-label"><i class="bi bi-speedometer2 me-1"></i>GPS</div>
+      <div class="scard-val" id="gpsAcc">—</div>
+      <div class="scard-sub" id="gpsAccSub">waiting…</div>
+    </div>
+  </div>
+
+  <!-- Map + Street View tabs -->
+  <div class="map-shell">
+    <div class="map-tabs-bar">
+      <button class="map-tab-btn active" id="tabMap" onclick="switchTab('map')">
+        <i class="bi bi-map"></i> Route Map
+      </button>
+      <button class="map-tab-btn" id="tabSV" onclick="switchTab('sv')">
+        <i class="bi bi-camera"></i> Street View
+        <span style="font-size:.65rem;background:#e5e7eb;padding:2px 6px;border-radius:8px;margin-left:4px;">Click map</span>
+      </button>
+    </div>
+    <div class="map-header">
+      <h5><span style="color:#ef4444;">⬤</span>&nbsp;
+        <span id="mapTabLabel">
+          <% if (food.status === 'accepted') { %>🟠 Route: You → Pickup<% } else { %>🔵 Route: Pickup → Delivery<% } %>
+        </span>
+      </h5>
+      <span id="gpsStatus"><i class="bi bi-hourglass-split me-1"></i>Getting GPS…</span>
+    </div>
+    <div id="svModeHintBar" style="display:none;padding:8px 16px;background:#f0fdf4;border-bottom:1px solid #dcfce7;">
+      <span class="sv-mode-hint"><i class="bi bi-camera me-1"></i>Street View mode — click any point on the map to open street view there</span>
+    </div>
+    <div id="ngoMap"></div>
+    <div id="streetViewContainer">
+      <div class="sv-placeholder" id="svPlaceholder">
+        <i class="bi bi-camera" style="font-size:3rem;opacity:.4;"></i>
+        <div class="sv-click-hint">Click any point on the route map tab to open street-level imagery here via Mapillary</div>
+      </div>
+      <iframe id="streetViewIframe" style="display:none;"></iframe>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="map-legend">
+    <div class="legend-item"><span class="ldot" style="background:#22c55e;"></span>Your Location</div>
+    <div class="legend-item"><span class="ldot" style="background:#f97316;"></span>Pickup</div>
+    <% if (hasDelivery) { %>
+      <div class="legend-item"><span class="ldot" style="background:#3b82f6;"></span>Delivery<% if (food.ngoOverrideDelivery) { %> <span style="font-size:.68rem;color:#f59e0b;">(changed)</span><% } %></div>
+    <% } %>
+    <% if (food.status === 'accepted') { %>
+      <div class="legend-item"><span class="lline" style="background:#f97316;"></span>Route (Leg 1)</div>
+    <% } else { %>
+      <div class="legend-item"><span class="lline" style="background:#60a5fa;"></span>Route (Leg 2)</div>
+    <% } %>
+  </div>
+
+  <!-- Turn-by-turn -->
+  <div class="inst-panel">
+    <h6><i class="bi bi-signpost-split me-1"></i>Turn-by-Turn Directions</h6>
+    <div id="instList"><p class="no-inst">Waiting for GPS…</p></div>
+  </div>
+
+  <!-- Actions -->
+  <div class="action-row">
+    <% if (food.status === 'accepted') { %>
+      <form action="/ngo/pickup/<%= food._id %>" method="POST" style="margin:0">
+        <button type="submit" class="btn-nav btn-pickup"><i class="bi bi-bag-check-fill"></i>Mark as Picked Up</button>
+      </form>
+    <% } else if (food.status === 'picked_up') { %>
+      <form action="/ngo/deliver/<%= food._id %>" method="POST" style="margin:0">
+        <button type="submit" class="btn-nav btn-deliver"><i class="bi bi-patch-check-fill"></i>Mark as Delivered</button>
+      </form>
+    <% } else if (food.status === 'delivered') { %>
+      <div class="alert alert-success mb-0"><i class="bi bi-check-circle-fill me-2"></i>Delivered! Great work 🎉</div>
+    <% } %>
+    <% if (food.status !== 'delivered') { %>
+      <a href="/ngo/set-delivery/<%= food._id %>" class="btn-nav" style="background:#f59e0b;color:#fff;text-decoration:none;">
+        <i class="bi bi-<%= (food.deliveryLocation || food.ngoDeliveryLocation) ? 'arrow-repeat' : 'pin-map' %>"></i>
+        <%= food.deliveryLocation ? 'Change Delivery' : food.ngoDeliveryLocation ? 'Change Delivery' : 'Set Delivery' %>
+      </a>
+    <% } %>
+    <button class="btn-nav btn-recenter" onclick="recenterMap()"><i class="bi bi-crosshair2"></i>Recenter</button>
+  </div>
+
+</div><!-- /container -->
+
+<footer class="app-footer">
+  <div class="container text-center">
+    <p class="footer-quote">"Waste not, want not. Every meal shared is a life touched."</p>
+    <p class="footer-copy">© 2024 FoodBridge</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+/* ── Server data ── */
+const FOOD_ID     = '<%- food._id %>';
+const FOOD_STATUS = '<%- food.status %>';  // 'accepted' or 'picked_up'
+
+let pLat = <%- (food.pickupLatitude  != null) ? food.pickupLatitude  : 'null' %>;
+let pLng = <%- (food.pickupLongitude != null) ? food.pickupLongitude : 'null' %>;
+
+// Effective delivery: donor's if no override, else NGO's
+let dLat = <%- (() => {
+  if (food.ngoDeliveryLatitude  != null) return food.ngoDeliveryLatitude;
+  if (food.deliveryLatitude     != null) return food.deliveryLatitude;
+  return 'null';
+})() %>;
+let dLng = <%- (() => {
+  if (food.ngoDeliveryLongitude != null) return food.ngoDeliveryLongitude;
+  if (food.deliveryLongitude    != null) return food.deliveryLongitude;
+  return 'null';
+})() %>;
+
+const PICKUP_ADDR   = `<%- (food.pickupLocation   || '').replace(/`/g,'') %>`;
+const DELIVERY_ADDR = `<%- (food.ngoDeliveryLocation || food.deliveryLocation || '').replace(/`/g,'') %>`;
+
+/* ── State ── */
+let map, mNGO=null, mPickup=null, mDelivery=null, routeLine=null;
+let myLat=null, myLng=null;
+let instructions=[], currentStep=0;
+let routeFetched=false, lastRouteFetch=0;
+let svMode=false;
+
+/* ── Helpers ── */
+function hvDist(la1,lo1,la2,lo2){
+  const R=6371,r=Math.PI/180;
+  const a=Math.sin((la2-la1)*r/2)**2+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin((lo2-lo1)*r/2)**2;
+  const d=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  return d<1?(d*1000).toFixed(0)+' m':d.toFixed(1)+' km';
+}
+function fmtSec(s){ s=Math.round(s); if(s<60) return s+'s'; if(s<3600) return Math.round(s/60)+' min'; return Math.floor(s/3600)+'h '+Math.round((s%3600)/60)+'m'; }
+
+/* ── Icons ── */
+function mkIcon(bg,emoji,sz){
+  return L.divIcon({ className:'',
+    html:`<div style="background:${bg};width:${sz}px;height:${sz}px;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 12px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:${Math.round(sz*.44)}px;">${emoji}</div>`,
+    iconSize:[sz,sz], iconAnchor:[sz/2,sz/2], popupAnchor:[0,-(sz/2+4)] });
+}
+const iNGO=mkIcon('#22c55e','🚗',44), iPickup=mkIcon('#f97316','📦',40), iDelivery=mkIcon('#3b82f6','🏠',40);
+
+/* ── Tab switching ── */
+function switchTab(tab) {
+  document.getElementById('tabMap').classList.toggle('active', tab==='map');
+  document.getElementById('tabSV').classList.toggle('active', tab==='sv');
+  document.getElementById('ngoMap').style.display           = tab==='map' ? 'block' : 'none';
+  document.getElementById('streetViewContainer').style.display = tab==='sv'  ? 'block' : 'none';
+  document.getElementById('svModeHintBar').style.display    = tab==='sv'  ? 'block' : 'none';
+  svMode = (tab === 'sv');
+  document.getElementById('ngoMap').classList.toggle('sv-mode', svMode);
+  if (tab === 'map') setTimeout(() => map.invalidateSize(), 100);
+}
+
+/* ── Open Street View via Mapillary ── */
+function openStreetView(lat, lng) {
+  const iframe = document.getElementById('streetViewIframe');
+  const placeholder = document.getElementById('svPlaceholder');
+  // Mapillary viewer — free, no API key for basic embed
+  const url = `https://www.mapillary.com/embed?image_key=&lat=${lat}&lng=${lng}&zoom=17`;
+  // Fallback: use a direct Mapillary link in an iframe
+  const mapillaryUrl = `https://www.mapillary.com/app/?lat=${lat}&lng=${lng}&z=17&menu=false`;
+  iframe.src = mapillaryUrl;
+  iframe.style.display = 'block';
+  placeholder.style.display = 'none';
+  // Switch to SV tab automatically
+  switchTab('sv');
+}
+
+/* ── OSRM route ── */
+function fetchRoute(fromLat,fromLng,toLat,toLng,cb){
+  const url=`https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?steps=true&geometries=geojson&overview=full`;
+  fetch(url).then(r=>r.json()).then(d=>{
+    if(d.code==='Ok'&&d.routes[0]) cb(null,d.routes[0]); else cb('No route');
+  }).catch(e=>cb(e.message));
+}
+
+function parseSteps(route){
+  const out=[];
+  (route.legs||[]).forEach(leg=>{
+    (leg.steps||[]).forEach(step=>{
+      const m=step.maneuver||{}, t=m.type||'', mod=m.modifier||'';
+      let icon='➡️';
+      if(t==='depart') icon='🚦'; else if(t==='arrive') icon='🏁'; else if(t==='roundabout'||t==='rotary') icon='🔄';
+      else if(t==='turn'||t==='new name'){
+        if(mod.includes('left')) icon='↰'; else if(mod.includes('right')) icon='↱';
+        else if(mod.includes('uturn')) icon='↩️'; else if(mod.includes('straight')) icon='⬆️';
+      }
+      const dist=step.distance<1000?Math.round(step.distance)+' m':(step.distance/1000).toFixed(1)+' km';
+      out.push({ text:`${icon} ${step.name?step.name+' — ':''}${dist}`, lat:m.location?m.location[1]:null, lng:m.location?m.location[0]:null });
+    });
+  });
+  return out;
+}
+
+function renderInst(){
+  const el=document.getElementById('instList');
+  if(!instructions.length){el.innerHTML='<p class="no-inst">Calculating route…</p>';return;}
+  let n=0,html='';
+  instructions.forEach((s,i)=>{
+    if(s.divider){html+=`<div class="inst-divider">${s.divider}</div>`;return;}
+    n++;
+    const cls=i===currentStep?'active':(i<currentStep?'done':'');
+    html+=`<div class="inst-row ${cls}"><div class="inst-num">${n}</div><span>${s.text}</span></div>`;
+  });
+  el.innerHTML=html;
+  const a=el.querySelector('.inst-row.active');
+  if(a) a.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+
+function advanceStep(){
+  if(!myLat||!instructions.length) return;
+  for(let i=currentStep;i<Math.min(currentStep+4,instructions.length);i++){
+    const s=instructions[i];
+    if(!s||s.divider||s.lat==null) continue;
+    const dx=(s.lat-myLat)*111320, dy=(s.lng-myLng)*111320*Math.cos(myLat*Math.PI/180);
+    if(Math.sqrt(dx*dx+dy*dy)<50&&i===currentStep){ currentStep=Math.min(i+1,instructions.length-1); renderInst(); }
+  }
+}
+
+/* ── PHASE-AWARE route drawing ──
+   Phase 1 (accepted):  draw ONLY NGO→Pickup, orange solid line
+   Phase 2 (picked_up): draw ONLY Pickup→Delivery, blue dashed line
+*/
+function drawPhaseRoute(){
+  if(!myLat) return;
+  const now=Date.now();
+  if(now-lastRouteFetch < 18000) return;
+  lastRouteFetch=now;
+
+  if(FOOD_STATUS==='accepted'){
+    // PHASE 1: You → Pickup only
+    if(!pLat) return;
+    fetchRoute(myLat,myLng,pLat,pLng,(err,r1)=>{
+      if(err||!r1) return;
+      if(routeLine) map.removeLayer(routeLine);
+      routeLine=L.polyline(r1.geometry.coordinates.map(c=>[c[1],c[0]]),
+        {color:'#f97316',weight:6,opacity:.9,lineJoin:'round',lineCap:'round'}).addTo(map);
+
+      instructions=parseSteps(r1);
+      currentStep=0; renderInst();
+
+      document.getElementById('distPickup').textContent=hvDist(myLat,myLng,pLat,pLng);
+      document.getElementById('etaPickup').textContent='~'+fmtSec(r1.duration)+' drive';
+      document.getElementById('totalEta').textContent=fmtSec(Math.round(r1.duration));
+
+      // Static distance Pickup→Delivery (info only, no route drawn)
+      if(pLat&&dLat){
+        document.getElementById('distDelivery').textContent=hvDist(pLat,pLng,dLat,dLng);
+        document.getElementById('etaDelivery').textContent='(after pickup)';
+      }
+
+      fitMap(); routeFetched=true;
+    });
+
+  } else if(FOOD_STATUS==='picked_up'){
+    // PHASE 2: Pickup → Delivery only (from current position but route starts from pickup conceptually)
+    // Actually route from current NGO position to delivery (most useful)
+    if(!dLat) return;
+    const fromLat = pLat || myLat;
+    const fromLng = pLng || myLng;
+    fetchRoute(fromLat,fromLng,dLat,dLng,(err,r2)=>{
+      if(err||!r2) return;
+      if(routeLine) map.removeLayer(routeLine);
+      routeLine=L.polyline(r2.geometry.coordinates.map(c=>[c[1],c[0]]),
+        {color:'#60a5fa',weight:6,dashArray:'10 6',opacity:.9,lineJoin:'round',lineCap:'round'}).addTo(map);
+
+      instructions=parseSteps(r2);
+      currentStep=0; renderInst();
+
+      if(pLat&&dLat) document.getElementById('distDelivery').textContent=hvDist(pLat,pLng,dLat,dLng);
+      document.getElementById('etaDelivery').textContent='~'+fmtSec(r2.duration)+' drive';
+      document.getElementById('totalEta').textContent=fmtSec(Math.round(r2.duration));
+
+      fitMap(); routeFetched=true;
+    });
+  }
+}
+
+function fitMap(){
+  const pts=[];
+  if(myLat) pts.push([myLat,myLng]);
+  if(pLat&&FOOD_STATUS==='accepted')  pts.push([pLat,pLng]);
+  if(dLat&&FOOD_STATUS==='picked_up') pts.push([dLat,dLng]);
+  if(!pts.length) return;
+  if(pts.length===1){map.setView(pts[0],15);return;}
+  map.fitBounds(L.latLngBounds(pts),{padding:[60,60],maxZoom:17});
+}
+function recenterMap(){ fitMap(); }
+
+/* ── Geocode ── */
+function geocode(addr,cb){
+  if(!addr||!addr.trim()){cb(null);return;}
+  fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(addr)+'&format=json&limit=1',{headers:{'Accept-Language':'en'}})
+    .then(r=>r.json()).then(d=>d&&d.length?cb({lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)}):cb(null)).catch(()=>cb(null));
+}
+function saveCoords(b){ fetch('/api/geocode-save/'+FOOD_ID,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).catch(()=>{}); }
+
+/* ── GPS watch ── */
+function startGPS(){
+  const gsEl=document.getElementById('gpsStatus');
+  if(!navigator.geolocation){gsEl.textContent='❌ No GPS';gsEl.className='err';return;}
+  navigator.geolocation.watchPosition(pos=>{
+    myLat=pos.coords.latitude; myLng=pos.coords.longitude;
+    const acc=Math.round(pos.coords.accuracy);
+    gsEl.innerHTML=`<i class="bi bi-broadcast" style="color:#ef4444;"></i> Live · ±${acc}m`;
+    gsEl.className='live';
+    document.getElementById('gpsAcc').textContent='±'+acc+'m';
+    document.getElementById('gpsAccSub').textContent=acc<20?'Excellent ✨':acc<50?'Good':acc<100?'Fair':'Poor';
+
+    if(!mNGO){mNGO=L.marker([myLat,myLng],{icon:iNGO,zIndexOffset:1000}).addTo(map).bindPopup('<b>🚗 You</b>');}
+    else mNGO.setLatLng([myLat,myLng]);
+
+    if(FOOD_STATUS==='accepted'&&pLat){
+      document.getElementById('distPickup').textContent=hvDist(myLat,myLng,pLat,pLng);
+    }
+
+    advanceStep();
+    drawPhaseRoute();
+    fitMap();
+
+    fetch('/api/ngo/location/'+FOOD_ID,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({latitude:myLat,longitude:myLng})}).catch(()=>{});
+  },
+  err=>{
+    const msgs={1:'🔒 Location denied',2:'📡 GPS unavailable',3:'⏱️ GPS timeout'};
+    gsEl.textContent=msgs[err.code]||'GPS error'; gsEl.className='err';
+  },{enableHighAccuracy:true,maximumAge:3000,timeout:25000});
+}
+
+/* ── Boot ── */
+document.addEventListener('DOMContentLoaded',()=>{
+  map=L.map('ngoMap');
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
+  map.setView([12.9716,77.5946],13);
+
+  // Map click → street view
+  map.on('click',e=>{
+    if(svMode) openStreetView(e.latlng.lat,e.latlng.lng);
+  });
+
+  // Place pickup marker
+  if(pLat&&pLng){
+    mPickup=L.marker([pLat,pLng],{icon:iPickup}).addTo(map).bindPopup(`<b>📦 Pickup</b><br><small>${PICKUP_ADDR}</small>`);
+    if(FOOD_STATUS==='accepted') map.setView([pLat,pLng],14);
+  } else if(PICKUP_ADDR){
+    geocode(PICKUP_ADDR,r=>{if(r){pLat=r.lat;pLng=r.lng;mPickup=L.marker([pLat,pLng],{icon:iPickup}).addTo(map).bindPopup(`<b>📦 Pickup</b><br><small>${PICKUP_ADDR}</small>`);saveCoords({pickupLatitude:r.lat,pickupLongitude:r.lng});}});
+  }
+
+  // Place delivery marker (only shown in phase 2)
+  if(dLat&&dLng){
+    mDelivery=L.marker([dLat,dLng],{icon:iDelivery}).addTo(map).bindPopup(`<b>🏠 Delivery</b><br><small>${DELIVERY_ADDR}</small>`);
+    if(FOOD_STATUS==='picked_up') map.setView([dLat,dLng],14);
+  } else if(DELIVERY_ADDR&&FOOD_STATUS==='picked_up'){
+    geocode(DELIVERY_ADDR,r=>{if(r){dLat=r.lat;dLng=r.lng;mDelivery=L.marker([dLat,dLng],{icon:iDelivery}).addTo(map).bindPopup(`<b>🏠 Delivery</b><br><small>${DELIVERY_ADDR}</small>`);saveCoords({deliveryLatitude:r.lat,deliveryLongitude:r.lng});}});
+  }
+
+  setTimeout(()=>map.invalidateSize(),200);
+  setTimeout(()=>map.invalidateSize(),800);
+  setTimeout(startGPS,400);
+  setInterval(()=>{if(myLat){lastRouteFetch=0;drawPhaseRoute();}},20000);
+});
+</script>
+</body>
+</html>

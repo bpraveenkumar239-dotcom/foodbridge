@@ -1,0 +1,26 @@
+{
+  "name": "FoodBridge – Food Donation",
+  "short_name": "FoodBridge",
+  "description": "Connect food donors with NGOs to reduce waste and feed communities",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a4a2e",
+  "theme_color": "#1a4a2e",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "icons": [
+    { "src": "/images/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/images/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "screenshots": [
+    { "src": "/images/icon-512.png", "sizes": "512x512", "type": "image/png", "form_factor": "narrow" }
+  ],
+  "categories": ["food", "social", "utilities"],
+  "shortcuts": [
+    { "name": "Donate Food",    "url": "/donor/donate",  "description": "List food for donation" },
+    { "name": "View Requests",  "url": "/ngo/requests",  "description": "See pending donations"  },
+    { "name": "Admin Panel",    "url": "/admin/dashboard","description": "Admin dashboard"       }
+  ],
+  "prefer_related_applications": false
+}

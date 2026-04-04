@@ -1,0 +1,152 @@
+<%- include('layout-start', {title:'Dashboard – Admin', pageTitle:'Dashboard', currentPage:'dashboard'}) %>
+
+<!-- Stat cards -->
+<div class="stat-grid">
+  <div class="astat" style="border-left-color:#22c55e;">
+    <span class="astat-icon">🤝</span>
+    <div class="astat-num"><%= stats.totalDonors %></div>
+    <div class="astat-label">Total Donors</div>
+  </div>
+  <div class="astat" style="border-left-color:#3b82f6;">
+    <span class="astat-icon">🏥</span>
+    <div class="astat-num"><%= stats.totalNGOs %></div>
+    <div class="astat-label">Total NGOs</div>
+  </div>
+  <div class="astat" style="border-left-color:#8b5cf6;">
+    <span class="astat-icon">📦</span>
+    <div class="astat-num"><%= stats.totalDonations %></div>
+    <div class="astat-label">All Donations</div>
+  </div>
+  <div class="astat" style="border-left-color:#f59e0b;">
+    <span class="astat-icon">⏳</span>
+    <div class="astat-num"><%= stats.pendingDonations %></div>
+    <div class="astat-label">Pending</div>
+  </div>
+  <div class="astat" style="border-left-color:#06b6d4;">
+    <span class="astat-icon">🚚</span>
+    <div class="astat-num"><%= stats.acceptedDonations %></div>
+    <div class="astat-label">In Progress</div>
+  </div>
+  <div class="astat" style="border-left-color:#10b981;">
+    <span class="astat-icon">✅</span>
+    <div class="astat-num"><%= stats.deliveredDonations %></div>
+    <div class="astat-label">Delivered</div>
+  </div>
+  <div class="astat" style="border-left-color:#ef4444;">
+    <span class="astat-icon">❌</span>
+    <div class="astat-num"><%= stats.rejectedDonations %></div>
+    <div class="astat-label">Rejected</div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Monthly trend chart -->
+  <div class="col-lg-8">
+    <div class="admin-card">
+      <div class="admin-card-title"><i class="bi bi-bar-chart-line text-success"></i>Monthly Donation Trend</div>
+      <canvas id="monthlyChart" height="120"></canvas>
+    </div>
+  </div>
+
+  <!-- Status donut -->
+  <div class="col-lg-4">
+    <div class="admin-card">
+      <div class="admin-card-title"><i class="bi bi-pie-chart text-purple"></i>Status Breakdown</div>
+      <canvas id="statusChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- Recent donations -->
+  <div class="col-lg-7">
+    <div class="admin-card">
+      <div class="admin-card-title">
+        <i class="bi bi-clock-history text-warning"></i>Recent Donations
+        <a href="/admin/donations" style="margin-left:auto;font-size:.8rem;color:#1a4a2e;font-weight:600;text-decoration:none;">View All →</a>
+      </div>
+      <% if(recentDonations.length === 0) { %>
+        <p class="text-muted text-center py-3">No donations yet</p>
+      <% } else { %>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead><tr>
+              <th>Food</th><th>Donor</th><th>NGO</th><th>Status</th><th>Date</th>
+            </tr></thead>
+            <tbody>
+              <% recentDonations.forEach(d => { %>
+              <tr>
+                <td><strong><%= d.name %></strong><br><small class="text-muted"><%= d.quantity %></small></td>
+                <td><%= d.donorName || '—' %></td>
+                <td><%= d.ngoName || '<span class="text-muted">Unassigned</span>' %></td>
+                <td><span class="status-badge status-<%= d.status %>"><%= d.status.replace('_',' ') %></span></td>
+                <td style="white-space:nowrap;font-size:.8rem;color:#6b7280;">
+                  <%= new Date(d.createdAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) %>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Recent users -->
+  <div class="col-lg-5">
+    <div class="admin-card">
+      <div class="admin-card-title">
+        <i class="bi bi-person-plus text-primary"></i>Recent Registrations
+        <a href="/admin/users" style="margin-left:auto;font-size:.8rem;color:#1a4a2e;font-weight:600;text-decoration:none;">View All →</a>
+      </div>
+      <% recentUsers.forEach(u => { %>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f3f4f6;">
+          <div style="width:36px;height:36px;border-radius:50%;background:#e8f5ee;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">
+            <%= u.role === 'donor' ? '🤝' : '🏥' %>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= u.name %></div>
+            <div style="font-size:.75rem;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= u.email %></div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+            <span class="role-<%= u.role %>"><%= u.role.toUpperCase() %></span>
+            <% if(u.isBanned){ %><span class="badge-banned">BANNED</span><% } %>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Monthly trend bar chart
+const mLabels  = <%- JSON.stringify(monthlyChart.map(m=>m.label)) %>;
+const mCounts  = <%- JSON.stringify(monthlyChart.map(m=>m.count)) %>;
+new Chart(document.getElementById('monthlyChart'),{
+  type:'bar',
+  data:{labels:mLabels,datasets:[{label:'Donations',data:mCounts,
+    backgroundColor:'rgba(45,122,79,.75)',borderColor:'#1a4a2e',borderWidth:2,borderRadius:8}]},
+  options:{responsive:true,plugins:{legend:{display:false}},
+    scales:{y:{beginAtZero:true,ticks:{stepSize:1},grid:{color:'#f3f4f6'}},
+            x:{grid:{display:false}}}}
+});
+
+// Status donut
+const sLabels = ['Pending','Accepted/Transit','Delivered','Rejected'];
+const sCounts = [
+  <%- stats.pendingDonations   || 0 %>,
+  <%- stats.acceptedDonations  || 0 %>,
+  <%- stats.deliveredDonations || 0 %>,
+  <%- stats.rejectedDonations  || 0 %>
+];
+new Chart(document.getElementById('statusChart'),{
+  type:'doughnut',
+  data:{labels:sLabels,datasets:[{data:sCounts,
+    backgroundColor:['#fbbf24','#06b6d4','#22c55e','#ef4444'],
+    borderWidth:3,borderColor:'#fff'}]},
+  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},
+    cutout:'70%'}
+});
+</script>
+
+<%- include('layout-end') %>

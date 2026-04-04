@@ -1,0 +1,140 @@
+<%- include('../partials/header', {title: 'My Impact – FoodBridge'}) %>
+<%- include('../partials/navbar') %>
+
+<div class="page-section">
+  <div class="container py-5">
+    <div class="section-header">
+      <h2 class="section-title"><i class="bi bi-heart-pulse me-2 text-danger"></i>My Impact</h2>
+      <p class="section-subtitle">See the difference your donations have made in the community</p>
+    </div>
+
+    <!-- Hero stat cards -->
+    <div class="row g-4 mb-5">
+      <div class="col-md-3 col-6">
+        <div class="impact-stat-card" style="border-top:4px solid #22c55e;">
+          <div class="impact-stat-icon">🍱</div>
+          <div class="impact-stat-num"><%= donations.length %></div>
+          <div class="impact-stat-label">Total Donations</div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="impact-stat-card" style="border-top:4px solid #3b82f6;">
+          <div class="impact-stat-icon">✅</div>
+          <div class="impact-stat-num"><%= delivered.length %></div>
+          <div class="impact-stat-label">Delivered</div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="impact-stat-card" style="border-top:4px solid #f59e0b;">
+          <div class="impact-stat-icon">🧑‍🤝‍🧑</div>
+          <div class="impact-stat-num"><%= livesImpacted.toLocaleString() %></div>
+          <div class="impact-stat-label">Lives Impacted</div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="impact-stat-card" style="border-top:4px solid #10b981;">
+          <div class="impact-stat-icon">🌱</div>
+          <div class="impact-stat-num"><%= co2Saved %> kg</div>
+          <div class="impact-stat-label">CO₂ Saved</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Monthly chart -->
+      <div class="col-lg-7">
+        <div class="form-card">
+          <h5 style="font-family:'DM Sans',sans-serif;font-weight:700;margin-bottom:16px;"><i class="bi bi-bar-chart-line me-2 text-success"></i>Monthly Donation Activity</h5>
+          <canvas id="monthlyChart" height="120"></canvas>
+        </div>
+      </div>
+
+      <!-- Badges / milestones -->
+      <div class="col-lg-5">
+        <div class="form-card">
+          <h5 style="font-family:'DM Sans',sans-serif;font-weight:700;margin-bottom:16px;"><i class="bi bi-award me-2 text-warning"></i>Your Badges</h5>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            <% const badgeList = [
+              { min:1,  icon:'🌱', label:'First Donor',    color:'#dcfce7', text:'#065f46' },
+              { min:5,  icon:'🤝', label:'Regular Giver',  color:'#dbeafe', text:'#1e40af' },
+              { min:10, icon:'🌟', label:'Star Donor',     color:'#fef3c7', text:'#92400e' },
+              { min:25, icon:'🏆', label:'Champion',       color:'#ede9fe', text:'#5b21b6' },
+              { min:50, icon:'🦸', label:'Hero',           color:'#fee2e2', text:'#991b1b' },
+            ]; %>
+            <% badgeList.forEach(b => { %>
+              <div style="background:<%= donations.length>=b.min ? b.color : '#f9fafb' %>;color:<%= donations.length>=b.min ? b.text : '#d1d5db' %>;border-radius:12px;padding:12px 16px;text-align:center;min-width:90px;opacity:<%= donations.length>=b.min?1:0.4 %>;">
+                <div style="font-size:1.6rem;"><%= b.icon %></div>
+                <div style="font-size:.72rem;font-weight:700;margin-top:4px;"><%= b.label %></div>
+              </div>
+            <% }) %>
+          </div>
+          <% if (avgDelivery) { %>
+            <div style="margin-top:20px;background:#f0fdf4;border-radius:12px;padding:14px;">
+              <div style="font-size:.75rem;color:#065f46;font-weight:700;text-transform:uppercase;">⚡ Avg Delivery Time</div>
+              <div style="font-size:1.4rem;font-weight:700;color:#22c55e;"><%= avgDelivery %> hrs</div>
+              <div style="font-size:.75rem;color:#9ca3af;">from acceptance to delivery</div>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Ratings received from NGOs -->
+      <div class="col-12">
+        <div class="form-card">
+          <h5 style="font-family:'DM Sans',sans-serif;font-weight:700;margin-bottom:16px;"><i class="bi bi-star me-2 text-warning"></i>NGO Feedback on Your Donations</h5>
+          <% if (myRatingsReceived.length === 0) { %>
+            <div style="text-align:center;padding:30px;color:#9ca3af;">
+              <div style="font-size:2.5rem;">⭐</div>
+              <p>No ratings yet. NGOs will rate your donations after delivery!</p>
+            </div>
+          <% } else { %>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <% myRatingsReceived.forEach(r => { %>
+                <div style="background:#fefce8;border:1.5px solid #fde68a;border-radius:12px;padding:14px 18px;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                    <div>
+                      <strong style="font-size:.9rem;"><%= r.food %></strong>
+                      <div style="font-size:.75rem;color:#9ca3af;"><%= r.byName %> · NGO</div>
+                    </div>
+                    <div style="color:#f59e0b;font-size:1.1rem;">
+                      <% for(let i=0;i<5;i++){ %><i class="bi bi-star<%= i < r.stars ? '-fill' : '' %>"></i><% } %>
+                    </div>
+                  </div>
+                  <% if (r.comment) { %>
+                    <p style="font-size:.85rem;color:#78350f;margin:8px 0 0;font-style:italic;">"<%= r.comment %>"</p>
+                  <% } %>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.impact-stat-card {
+  background:#fff; border-radius:16px; padding:24px 20px; text-align:center;
+  box-shadow:0 2px 10px rgba(0,0,0,.07); transition:all .2s;
+}
+.impact-stat-card:hover { transform:translateY(-4px); box-shadow:0 8px 24px rgba(0,0,0,.1); }
+.impact-stat-icon { font-size:2rem; margin-bottom:10px; }
+.impact-stat-num  { font-size:2rem; font-weight:700; font-family:'Playfair Display',serif; color:#1a4a2e; }
+.impact-stat-label{ font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:#6b7280; margin-top:4px; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const labels = <%- JSON.stringify(monthly.map(m=>m.label)) %>;
+const counts = <%- JSON.stringify(monthly.map(m=>m.count)) %>;
+new Chart(document.getElementById('monthlyChart'), {
+  type: 'bar',
+  data: { labels, datasets: [{ label:'Donations', data: counts,
+    backgroundColor:'rgba(45,122,79,.75)', borderColor:'#1a4a2e', borderWidth:2, borderRadius:8 }] },
+  options: { responsive:true, plugins:{legend:{display:false}},
+    scales: { y:{beginAtZero:true,ticks:{stepSize:1},grid:{color:'#f3f4f6'}}, x:{grid:{display:false}} } }
+});
+</script>
+
+<%- include('../partials/footer') %>

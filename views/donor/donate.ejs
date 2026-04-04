@@ -1,0 +1,322 @@
+<%- include('../partials/header', {title: 'Donate Food – FoodBridge'}) %>
+<%- include('../partials/navbar') %>
+
+<div class="page-section">
+  <div class="container py-5">
+    <div class="section-header">
+      <h2 class="section-title"><i class="bi bi-gift me-2"></i>Donate Food</h2>
+      <p class="section-subtitle">Fill in the details about the food you'd like to donate</p>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i><%= error %></div>
+    <% } %>
+
+    <div class="form-card">
+      <form action="/donor/donate" method="POST" id="donateForm">
+        <div class="row g-4">
+
+          <!-- Food Name with Autocomplete -->
+          <div class="col-md-6">
+            <label class="form-label">Food Name * <span class="text-muted" style="font-size:.75rem;">(type or pick below)</span></label>
+            <div style="position:relative;">
+              <input type="text" class="form-control fc-custom" name="foodName" id="foodName"
+                value="<%= prefill && prefill.foodName ? prefill.foodName : '' %>"
+                placeholder="e.g. Idli, Biryani, Rice…"
+                autocomplete="off" required
+                oninput="filterFoodSuggestions(this.value)"/>
+              <div id="foodDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid #e5e7eb;border-radius:0 0 12px 12px;max-height:220px;overflow-y:auto;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.12);">
+              </div>
+            </div>
+
+            <!-- Quick-pick food tags -->
+            <div style="margin-top:12px;">
+              <div style="font-size:.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Quick Pick — South Indian Foods</div>
+              <div id="foodTagsContainer" style="display:flex;flex-wrap:wrap;gap:6px;max-height:160px;overflow-y:auto;padding:4px 0;">
+                <!-- Rendered by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Quantity + Servings -->
+          <div class="col-md-6">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">Quantity * <span class="text-muted">(min. 10)</span></label>
+                <input type="number" class="form-control fc-custom" name="quantity" id="quantity"
+                  value="<%= prefill && prefill.quantity ? prefill.quantity : '' %>"
+                  placeholder="e.g. 20" min="10" required/>
+                <div class="invalid-feedback" id="quantityError"></div>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Estimated Servings (people)</label>
+                <input type="number" class="form-control fc-custom" name="servings"
+                  value="<%= prefill && prefill.servings ? prefill.servings : '' %>"
+                  placeholder="e.g. 30" min="1"/>
+                <div class="form-text">How many people this can feed</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Category + Tags -->
+          <div class="col-md-4">
+            <label class="form-label">Category *</label>
+            <select class="form-select fc-custom" name="category" required>
+              <option value="cooked"    <%= prefill&&prefill.category==='cooked'?'selected':''%>>🥘 Cooked Food</option>
+              <option value="raw"       <%= prefill&&prefill.category==='raw'?'selected':''%>>🥦 Raw Ingredients</option>
+              <option value="packaged"  <%= prefill&&prefill.category==='packaged'?'selected':''%>>📦 Packaged Food</option>
+              <option value="bakery"    <%= prefill&&prefill.category==='bakery'?'selected':''%>>🥖 Bakery Items</option>
+              <option value="fruits_veg"<%= prefill&&prefill.category==='fruits_veg'?'selected':''%>>🍎 Fruits & Veg</option>
+              <option value="dairy"     <%= prefill&&prefill.category==='dairy'?'selected':''%>>🥛 Dairy</option>
+              <option value="other"     <%= (!prefill||!prefill.category||prefill.category==='other')?'selected':''%>>🍱 Other</option>
+            </select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Tags <span class="text-muted">(comma separated)</span></label>
+            <input type="text" class="form-control fc-custom" name="tags"
+              value="<%= prefill && prefill.tags ? prefill.tags : '' %>"
+              placeholder="veg, hot, gluten-free…"/>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Best Before / Expires At</label>
+            <input type="datetime-local" class="form-control fc-custom" name="expiresAt"
+              value="<%= prefill && prefill.expiresAt ? prefill.expiresAt : '' %>"/>
+            <div class="form-text">Leave blank if no expiry concern</div>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Additional Info</label>
+            <textarea class="form-control fc-custom" name="description" rows="2"
+              placeholder="Allergens, freshness, storage instructions…"><%= prefill && prefill.description ? prefill.description : '' %></textarea>
+          </div>
+
+          <!-- Pickup Location -->
+          <div class="col-12">
+            <label class="form-label">Pickup Location *</label>
+            <div class="location-selector">
+              <div class="location-tabs">
+                <button type="button" class="loc-tab active" data-method="manual"><i class="bi bi-keyboard"></i> Type</button>
+                <button type="button" class="loc-tab" data-method="live"><i class="bi bi-geo-alt-fill"></i> My Location</button>
+                <button type="button" class="loc-tab" data-method="map"><i class="bi bi-map"></i> Map</button>
+              </div>
+              <div class="location-input-area">
+                <input type="text" class="form-control fc-custom" name="pickupLocation" id="pickupLocationText"
+                  placeholder="Enter pickup address…"
+                  value="<%= prefill && prefill.pickupLocation ? prefill.pickupLocation : '' %>" required/>
+                <input type="hidden" name="pickupLatitude"  id="pickupLat"/>
+                <input type="hidden" name="pickupLongitude" id="pickupLng"/>
+                <div id="liveLocationStatus" class="location-status" style="display:none;">
+                  <div class="spinner-border spinner-border-sm text-success me-2"></div>Detecting location…
+                </div>
+                <div id="pickupMapContainer" class="map-container" style="display:none;">
+                  <div id="pickupMap" style="height:280px;border-radius:12px;"></div>
+                  <p class="map-hint"><i class="bi bi-cursor me-1"></i>Click to set pickup location</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions mt-4">
+          <button type="submit" class="btn btn-primary btn-lg btn-submit">
+            <i class="bi bi-arrow-right-circle me-2"></i>Continue to Delivery Details
+          </button>
+          <a href="/donor/dashboard" class="btn btn-ghost ms-3">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.food-tag-btn {
+  display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;
+  background:#f3f4f6;color:#374151;border:1.5px solid #e5e7eb;
+  font-size:.78rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;
+  white-space:nowrap;
+}
+.food-tag-btn:hover{background:#e8f5ee;border-color:#22c55e;color:#1a4a2e;}
+.food-tag-btn.added{background:#1a4a2e;color:#fff;border-color:#1a4a2e;}
+.food-tag-btn .add-icon{font-size:.7rem;background:rgba(255,255,255,.25);border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;}
+
+#foodDropdown .dropdown-item-custom {
+  padding:10px 14px;cursor:pointer;font-size:.88rem;border-bottom:1px solid #f9fafb;
+  display:flex;align-items:center;gap:10px;
+}
+#foodDropdown .dropdown-item-custom:hover{background:#f0fdf4;}
+#foodDropdown .dropdown-item-custom:last-child{border-bottom:none;}
+</style>
+
+<script>
+/* ── 50 South Indian Foods ── */
+const SOUTH_INDIAN_FOODS = [
+  { name:'Idli',             emoji:'🫓', category:'cooked', desc:'Steamed rice cakes' },
+  { name:'Dosa',             emoji:'🥞', category:'cooked', desc:'Crispy rice crepe' },
+  { name:'Masala Dosa',      emoji:'🥞', category:'cooked', desc:'Dosa with potato filling' },
+  { name:'Rava Dosa',        emoji:'🥞', category:'cooked', desc:'Semolina crepe' },
+  { name:'Uttapam',          emoji:'🫓', category:'cooked', desc:'Thick rice pancake with toppings' },
+  { name:'Vada',             emoji:'🍩', category:'cooked', desc:'Fried lentil doughnut' },
+  { name:'Sambar',           emoji:'🥣', category:'cooked', desc:'Lentil vegetable stew' },
+  { name:'Rasam',            emoji:'🍵', category:'cooked', desc:'Tamarind pepper soup' },
+  { name:'Upma',             emoji:'🥣', category:'cooked', desc:'Semolina savoury porridge' },
+  { name:'Pongal',           emoji:'🍚', category:'cooked', desc:'Rice and lentil dish' },
+  { name:'Curd Rice',        emoji:'🍚', category:'cooked', desc:'Rice mixed with yoghurt' },
+  { name:'Tamarind Rice',    emoji:'🍚', category:'cooked', desc:'Tangy tamarind flavoured rice' },
+  { name:'Lemon Rice',       emoji:'🍋', category:'cooked', desc:'Lemon flavoured rice' },
+  { name:'Bisibelebath',     emoji:'🍲', category:'cooked', desc:'Spiced rice and lentil dish' },
+  { name:'Puliyodarai',      emoji:'🍚', category:'cooked', desc:'Tamarind rice — Tamil style' },
+  { name:'Coconut Rice',     emoji:'🥥', category:'cooked', desc:'Rice cooked with coconut' },
+  { name:'Ven Pongal',       emoji:'🍚', category:'cooked', desc:'Savoury rice with pepper and cumin' },
+  { name:'Biriyani',         emoji:'🍛', category:'cooked', desc:'Spiced rice with vegetables or meat' },
+  { name:'Chicken Chettinad',emoji:'🍗', category:'cooked', desc:'Spicy Chettinad curry' },
+  { name:'Fish Curry',       emoji:'🐟', category:'cooked', desc:'South Indian style fish curry' },
+  { name:'Appam',            emoji:'🫓', category:'cooked', desc:'Fermented rice pancake' },
+  { name:'Idiyappam',        emoji:'🍝', category:'cooked', desc:'String hoppers (rice noodles)' },
+  { name:'Puttu',            emoji:'🫙', category:'cooked', desc:'Steamed rice flour cylinders' },
+  { name:'Pesarattu',        emoji:'🥞', category:'cooked', desc:'Green moong dosa' },
+  { name:'Kuzhi Paniyaram',  emoji:'🟤', category:'cooked', desc:'Crispy rice dumplings' },
+  { name:'Medu Vada',        emoji:'🍩', category:'cooked', desc:'Crispy lentil donuts' },
+  { name:'Parotha',          emoji:'🫓', category:'cooked', desc:'Layered flaky flatbread' },
+  { name:'Kottu',            emoji:'🍳', category:'cooked', desc:'Chopped parotta stir-fry' },
+  { name:'Avial',            emoji:'🥗', category:'cooked', desc:'Mixed vegetable coconut curry' },
+  { name:'Kootu',            emoji:'🥣', category:'cooked', desc:'Vegetable and lentil dry curry' },
+  { name:'Thoran',           emoji:'🥬', category:'cooked', desc:'Coconut stir-fried vegetables' },
+  { name:'Olan',             emoji:'🍲', category:'cooked', desc:'Pumpkin and bean coconut stew' },
+  { name:'Papadam',          emoji:'🫓', category:'packaged', desc:'Crispy lentil wafer' },
+  { name:'Mysore Pak',       emoji:'🟡', category:'cooked', desc:'Gram flour sweet' },
+  { name:'Kesari',           emoji:'🟠', category:'cooked', desc:'Semolina sweet pudding' },
+  { name:'Payasam',          emoji:'🍮', category:'cooked', desc:'Sweet milk pudding' },
+  { name:'Murukku',          emoji:'🌀', category:'packaged', desc:'Spiral fried snack' },
+  { name:'Chakli',           emoji:'🌀', category:'packaged', desc:'Fried savoury rice snack' },
+  { name:'Mixture',          emoji:'🍿', category:'packaged', desc:'Spicy snack mix' },
+  { name:'Ribbon Pakoda',    emoji:'🟡', category:'packaged', desc:'Flat fried snack' },
+  { name:'Neer Dosa',        emoji:'🥞', category:'cooked', desc:'Thin watery rice dosa (coastal)' },
+  { name:'Kori Rotti',       emoji:'🍗', category:'cooked', desc:'Chicken curry with puffed rice' },
+  { name:'Sabudana Khichdi', emoji:'🥣', category:'cooked', desc:'Sago stir-fry' },
+  { name:'Tomato Rice',      emoji:'🍅', category:'cooked', desc:'Rice cooked with tomato masala' },
+  { name:'Vegetable Kurma',  emoji:'🥘', category:'cooked', desc:'Mixed veg in coconut gravy' },
+  { name:'Dal Makhani',      emoji:'🫕', category:'cooked', desc:'Creamy black lentils' },
+  { name:'Sprouted Moong',   emoji:'🌱', category:'raw', desc:'Germinated moong beans' },
+  { name:'Boiled Eggs',      emoji:'🥚', category:'cooked', desc:'Hard boiled eggs' },
+  { name:'Bread',            emoji:'🍞', category:'bakery', desc:'Sliced bread loaves' },
+  { name:'Banana Chips',     emoji:'🍌', category:'packaged', desc:'Fried banana chips (Kerala)' },
+];
+
+const foodInput    = document.getElementById('foodName');
+const foodDropdown = document.getElementById('foodDropdown');
+const tagsContainer= document.getElementById('foodTagsContainer');
+
+// Render all tags initially
+function renderAllTags() {
+  tagsContainer.innerHTML = SOUTH_INDIAN_FOODS.map(f =>
+    `<button type="button" class="food-tag-btn" data-name="${f.name}" data-cat="${f.category}"
+       onclick="addFood('${f.name}','${f.category}')" title="${f.desc}">
+      ${f.emoji} ${f.name}
+      <span class="add-icon">+</span>
+    </button>`
+  ).join('');
+}
+renderAllTags();
+
+function addFood(name, category) {
+  foodInput.value = name;
+  // Auto-set category
+  const catSelect = document.querySelector('select[name="category"]');
+  if (catSelect) catSelect.value = category;
+  // Mark button as added
+  document.querySelectorAll('.food-tag-btn').forEach(b => {
+    if (b.dataset.name === name) {
+      b.classList.add('added');
+      b.querySelector('.add-icon').textContent = '✓';
+    } else {
+      b.classList.remove('added');
+      b.querySelector('.add-icon').textContent = '+';
+    }
+  });
+  foodDropdown.style.display = 'none';
+  foodInput.focus();
+}
+
+function filterFoodSuggestions(val) {
+  // Update tag highlights
+  document.querySelectorAll('.food-tag-btn').forEach(b => {
+    const match = b.dataset.name.toLowerCase().includes(val.toLowerCase());
+    b.style.opacity = val && !match ? '0.35' : '1';
+    b.style.order   = val && match ? '-1' : '0';
+  });
+
+  if (!val || val.length < 1) { foodDropdown.style.display='none'; return; }
+  const matches = SOUTH_INDIAN_FOODS.filter(f => f.name.toLowerCase().includes(val.toLowerCase())).slice(0,8);
+  if (!matches.length) { foodDropdown.style.display='none'; return; }
+  foodDropdown.innerHTML = matches.map(f =>
+    `<div class="dropdown-item-custom" onclick="addFood('${f.name}','${f.category}')">
+      <span style="font-size:1.2rem;">${f.emoji}</span>
+      <div>
+        <div style="font-weight:600;">${f.name}</div>
+        <div style="font-size:.75rem;color:#9ca3af;">${f.desc}</div>
+      </div>
+      <span style="margin-left:auto;font-size:.7rem;background:#e8f5ee;color:#1a4a2e;padding:2px 8px;border-radius:10px;font-weight:600;">Add</span>
+    </div>`
+  ).join('');
+  foodDropdown.style.display = 'block';
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', e => {
+  if (!foodInput.contains(e.target) && !foodDropdown.contains(e.target)) foodDropdown.style.display='none';
+});
+
+/* ── Location picker ── */
+let pickupMap=null, pickupMarker=null;
+document.querySelectorAll('.loc-tab').forEach(tab=>{
+  tab.addEventListener('click',function(){
+    document.querySelectorAll('.loc-tab').forEach(t=>t.classList.remove('active'));
+    this.classList.add('active');
+    const method=this.dataset.method;
+    document.getElementById('liveLocationStatus').style.display='none';
+    document.getElementById('pickupMapContainer').style.display='none';
+    if(method==='live'){
+      document.getElementById('liveLocationStatus').style.display='flex';
+      navigator.geolocation.getCurrentPosition(pos=>{
+        const lat=pos.coords.latitude,lng=pos.coords.longitude;
+        document.getElementById('pickupLat').value=lat;
+        document.getElementById('pickupLng').value=lng;
+        reverseGeocode(lat,lng,'pickupLocationText');
+        document.getElementById('liveLocationStatus').style.display='none';
+      },()=>{document.getElementById('liveLocationStatus').innerHTML='<i class="bi bi-x-circle text-danger me-2"></i>Location denied.';});
+    } else if(method==='map'){
+      document.getElementById('pickupMapContainer').style.display='block';
+      if(!pickupMap){
+        pickupMap=L.map('pickupMap').setView([20.5937,78.9629],5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(pickupMap);
+        pickupMap.on('click',e=>{
+          if(pickupMarker) pickupMap.removeLayer(pickupMarker);
+          pickupMarker=L.marker([e.latlng.lat,e.latlng.lng]).addTo(pickupMap);
+          document.getElementById('pickupLat').value=e.latlng.lat;
+          document.getElementById('pickupLng').value=e.latlng.lng;
+          reverseGeocode(e.latlng.lat,e.latlng.lng,'pickupLocationText');
+        });
+      } else {setTimeout(()=>pickupMap.invalidateSize(),100);}
+    }
+  });
+});
+
+function reverseGeocode(lat,lng,id){
+  fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+    .then(r=>r.json()).then(d=>{document.getElementById(id).value=d.display_name||`${lat.toFixed(4)}, ${lng.toFixed(4)}`;}).catch(()=>{document.getElementById(id).value=`${lat.toFixed(4)}, ${lng.toFixed(4)}`;});
+}
+
+document.getElementById('donateForm').addEventListener('submit',e=>{
+  const qty=parseFloat(document.getElementById('quantity').value);
+  if(isNaN(qty)||qty<10){
+    e.preventDefault();
+    document.getElementById('quantity').classList.add('is-invalid');
+    document.getElementById('quantityError').textContent='Minimum quantity is 10 servings/kg.';
+    document.getElementById('quantityError').style.display='block';
+  }
+});
+</script>
+
+<%- include('../partials/footer') %>

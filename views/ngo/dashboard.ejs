@@ -1,0 +1,98 @@
+<%- include('../partials/header', {title: 'NGO Dashboard – FoodBridge'}) %>
+<%- include('../partials/navbar') %>
+
+<div class="page-hero ngo-hero">
+  <div class="page-hero-content">
+    <h1 class="page-hero-title">Welcome, <span class="highlight"><%= user.name %></span></h1>
+    <p class="page-hero-subtitle">Bridging donors and communities in need. Every pickup counts.</p>
+  </div>
+</div>
+
+<div class="container py-5">
+  <!-- Stats -->
+  <div class="row g-4 mb-5">
+    <div class="col-md-3 col-6">
+      <div class="stat-card stat-pending">
+        <div class="stat-icon">📬</div>
+        <div class="stat-info">
+          <div class="stat-number" id="pendingCount"><%= stats.pending %></div>
+          <div class="stat-label">Pending Requests</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="stat-card stat-accepted">
+        <div class="stat-icon">✅</div>
+        <div class="stat-info">
+          <div class="stat-number"><%= stats.accepted %></div>
+          <div class="stat-label">Active Deliveries</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="stat-card stat-delivered">
+        <div class="stat-icon">🎉</div>
+        <div class="stat-info">
+          <div class="stat-number"><%= stats.delivered %></div>
+          <div class="stat-label">Completed</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="stat-card" style="border-left-color:#f59e0b;">
+        <div class="stat-icon">⭐</div>
+        <div class="stat-info">
+          <div class="stat-number"><%= avgRating || '—' %></div>
+          <div class="stat-label">Avg Rating (<%= ratingCount %>)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="row g-4 mb-5">
+    <div class="col-md-4">
+      <a href="/ngo/requests" class="dashboard-card dashboard-card-primary text-decoration-none">
+        <div class="dashboard-card-icon">📋</div>
+        <h3>Donation Requests</h3>
+        <p>View pending requests, accept or reject, and manage your active deliveries.</p>
+        <span class="dashboard-card-btn">View Requests →</span>
+      </a>
+    </div>
+    <div class="col-md-4">
+      <a href="/ngo/map" class="dashboard-card text-decoration-none" style="border:2px solid #3b82f6;">
+        <div class="dashboard-card-icon">🗺️</div>
+        <h3>Map View</h3>
+        <p>See all pending donations on an interactive map. Filter by food category.</p>
+        <span class="dashboard-card-btn" style="color:#3b82f6;">Open Map →</span>
+      </a>
+    </div>
+    <div class="col-md-4">
+      <a href="/ngo/leaderboard" class="dashboard-card text-decoration-none" style="border:2px solid #f59e0b;">
+        <div class="dashboard-card-icon">🏆</div>
+        <h3>Leaderboard</h3>
+        <p>See top donors and NGOs in the community ranked by impact.</p>
+        <span class="dashboard-card-btn" style="color:#d97706;">View Rankings →</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="impact-section">
+    <h4 class="impact-title">Your Impact This Month</h4>
+    <div class="row g-3 mt-2">
+      <div class="col-md-4"><div class="impact-card"><span class="impact-icon">🍽️</span><p>Every meal collected prevents food going to landfill</p></div></div>
+      <div class="col-md-4"><div class="impact-card"><span class="impact-icon">👨‍👩‍👧</span><p>Families across the city depend on your timely pickups</p></div></div>
+      <div class="col-md-4"><div class="impact-card"><span class="impact-icon">🌱</span><p>Reducing carbon emissions one delivery at a time</p></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+setInterval(() => {
+  fetch('/api/stats').then(r=>r.json()).then(d => {
+    document.getElementById('pendingCount').textContent = d.pending;
+  });
+}, 15000);
+</script>
+
+<%- include('../partials/footer') %>

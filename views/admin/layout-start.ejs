@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title><%= title || 'Admin – FoodBridge' %></title>
+  <link rel="manifest" href="/manifest.json"/>
+  <link rel="icon" href="/images/icon-192.png"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    /* ── Admin shell ── */
+    html,body{height:100%;margin:0;padding:0;}
+    body{font-family:'DM Sans',sans-serif;background:#f0f4f0;display:flex;flex-direction:column;}
+
+    .admin-shell{display:flex;flex:1;min-height:100vh;}
+
+    /* ── Sidebar ── */
+    .admin-sidebar{
+      width:240px;min-width:240px;background:linear-gradient(180deg,#0f2a1a 0%,#1a4a2e 100%);
+      display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;
+      z-index:100;transition:transform .3s;
+    }
+    .sidebar-brand{
+      padding:24px 20px 16px;border-bottom:1px solid rgba(255,255,255,.1);
+      display:flex;align-items:center;gap:10px;
+    }
+    .sidebar-brand-icon{font-size:1.8rem;}
+    .sidebar-brand-text{font-family:'Playfair Display',serif;color:#fff;font-size:1.1rem;font-weight:700;line-height:1.2;}
+    .sidebar-brand-sub{font-size:.68rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;}
+
+    .sidebar-section{padding:16px 12px 4px;font-size:.65rem;font-weight:700;text-transform:uppercase;
+      letter-spacing:1px;color:rgba(255,255,255,.35);}
+
+    .sidebar-nav{list-style:none;padding:0 8px;margin:0;}
+    .sidebar-nav li{margin-bottom:2px;}
+    .sidebar-nav a{
+      display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;
+      color:rgba(255,255,255,.75);text-decoration:none;font-size:.88rem;font-weight:500;
+      transition:all .2s;
+    }
+    .sidebar-nav a:hover{background:rgba(255,255,255,.1);color:#fff;}
+    .sidebar-nav a.active{background:rgba(255,255,255,.15);color:#fff;font-weight:700;}
+    .sidebar-nav a i{font-size:1rem;width:20px;text-align:center;flex-shrink:0;}
+    .sidebar-badge{
+      margin-left:auto;background:#ef4444;color:#fff;font-size:.65rem;
+      font-weight:700;padding:2px 7px;border-radius:10px;
+    }
+
+    .sidebar-footer{
+      margin-top:auto;padding:16px 20px;border-top:1px solid rgba(255,255,255,.1);
+      display:flex;align-items:center;gap:10px;
+    }
+    .sidebar-avatar{
+      width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);
+      display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;
+    }
+    .sidebar-user-name{font-size:.82rem;color:#fff;font-weight:600;line-height:1.2;}
+    .sidebar-user-role{font-size:.68rem;color:rgba(255,255,255,.5);}
+    .sidebar-logout{
+      margin-left:auto;color:rgba(255,255,255,.5);text-decoration:none;font-size:1rem;
+      transition:color .2s;
+    }
+    .sidebar-logout:hover{color:#fca5a5;}
+
+    /* ── Main area ── */
+    .admin-main{flex:1;display:flex;flex-direction:column;min-width:0;overflow-x:hidden;}
+
+    /* ── Top bar ── */
+    .admin-topbar{
+      background:#fff;border-bottom:1px solid #e5e7eb;
+      padding:14px 28px;display:flex;align-items:center;justify-content:space-between;
+      flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:50;
+    }
+    .topbar-title{font-family:'Playfair Display',serif;font-size:1.4rem;color:#1a4a2e;margin:0;}
+    .topbar-right{display:flex;align-items:center;gap:12px;}
+    .topbar-time{font-size:.8rem;color:#9ca3af;}
+
+    /* ── Content area ── */
+    .admin-content{padding:24px 28px;flex:1;}
+
+    /* ── Stat cards ── */
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px;}
+    .astat{
+      background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.06);
+      border-left:4px solid transparent;transition:all .2s;
+    }
+    .astat:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.1);}
+    .astat-icon{font-size:2rem;margin-bottom:10px;display:block;}
+    .astat-num{font-size:2rem;font-weight:700;font-family:'Playfair Display',serif;color:#1a4a2e;line-height:1;}
+    .astat-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-top:4px;}
+
+    /* ── Cards ── */
+    .admin-card{background:#fff;border-radius:16px;padding:24px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:20px;}
+    .admin-card-title{font-size:1rem;font-weight:700;color:#1a4a2e;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+
+    /* ── Tables ── */
+    .admin-table{width:100%;border-collapse:separate;border-spacing:0;}
+    .admin-table th{background:#f9fafb;font-size:.72rem;font-weight:700;text-transform:uppercase;
+      letter-spacing:.5px;color:#6b7280;padding:10px 14px;border-bottom:2px solid #e5e7eb;}
+    .admin-table td{padding:12px 14px;border-bottom:1px solid #f3f4f6;font-size:.88rem;vertical-align:middle;}
+    .admin-table tr:last-child td{border-bottom:none;}
+    .admin-table tr:hover td{background:#fafafa;}
+
+    /* ── Badges ── */
+    .role-donor  {background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:.72rem;font-weight:700;}
+    .role-ngo    {background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:12px;font-size:.72rem;font-weight:700;}
+    .role-admin  {background:#ede9fe;color:#5b21b6;padding:3px 10px;border-radius:12px;font-size:.72rem;font-weight:700;}
+    .badge-banned{background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:.72rem;font-weight:700;}
+    .badge-active{background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:.72rem;font-weight:700;}
+
+    /* ── Action buttons ── */
+    .btn-admin-sm{font-size:.78rem;padding:5px 12px;border-radius:8px;font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
+    .btn-danger-sm {background:#fee2e2;color:#991b1b;}
+    .btn-danger-sm:hover{background:#fca5a5;}
+    .btn-success-sm{background:#d1fae5;color:#065f46;}
+    .btn-success-sm:hover{background:#6ee7b7;}
+    .btn-info-sm   {background:#dbeafe;color:#1e40af;}
+    .btn-info-sm:hover{background:#93c5fd;}
+    .btn-warn-sm   {background:#fef3c7;color:#92400e;}
+    .btn-warn-sm:hover{background:#fde68a;}
+
+    /* ── Filters ── */
+    .filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center;}
+    .filter-bar input,.filter-bar select{
+      border:2px solid #e5e7eb;border-radius:10px;padding:8px 14px;
+      font-size:.85rem;font-family:'DM Sans',sans-serif;
+      background:#fff;transition:border-color .2s;
+    }
+    .filter-bar input:focus,.filter-bar select:focus{border-color:#2d7a4f;outline:none;}
+    .filter-bar .btn-filter{
+      background:#1a4a2e;color:#fff;border:none;border-radius:10px;
+      padding:9px 20px;font-size:.85rem;font-weight:600;cursor:pointer;
+      font-family:'DM Sans',sans-serif;transition:all .2s;
+    }
+    .filter-bar .btn-filter:hover{background:#2d7a4f;}
+    .filter-bar .btn-reset{
+      background:#f3f4f6;color:#374151;border:none;border-radius:10px;
+      padding:9px 16px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;
+    }
+
+    /* ── Pagination ── */
+    .admin-pagination{display:flex;gap:6px;justify-content:center;margin-top:20px;flex-wrap:wrap;}
+    .admin-pagination a{
+      padding:8px 14px;border-radius:8px;text-decoration:none;font-size:.85rem;font-weight:600;
+      background:#fff;color:#374151;border:2px solid #e5e7eb;transition:all .2s;
+    }
+    .admin-pagination a.active,.admin-pagination a:hover{background:#1a4a2e;color:#fff;border-color:#1a4a2e;}
+    .admin-pagination a.disabled{opacity:.4;pointer-events:none;}
+
+    /* ── Modals ── */
+    .modal-content{border-radius:16px;border:none;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+    .modal-header{border-bottom:1px solid #f3f4f6;padding:20px 24px;}
+    .modal-body  {padding:20px 24px;}
+    .modal-footer{border-top:1px solid #f3f4f6;padding:16px 24px;}
+
+    /* ── Responsive ── */
+    @media(max-width:768px){
+      .admin-sidebar{position:fixed;transform:translateX(-100%);z-index:200;}
+      .admin-sidebar.open{transform:translateX(0);}
+      .admin-content{padding:16px;}
+      .admin-topbar{padding:12px 16px;}
+    }
+  </style>
+</head>
+<body>
+<div class="admin-shell">
+  <!-- SIDEBAR -->
+  <aside class="admin-sidebar" id="adminSidebar">
+    <div class="sidebar-brand">
+      <span class="sidebar-brand-icon">🌿</span>
+      <div>
+        <div class="sidebar-brand-text">FoodBridge</div>
+        <div class="sidebar-brand-sub">Admin Panel</div>
+      </div>
+    </div>
+
+    <p class="sidebar-section">Main</p>
+    <ul class="sidebar-nav">
+      <li><a href="/admin/dashboard" class="<%= currentPage==='dashboard'?'active':'' %>">
+        <i class="bi bi-speedometer2"></i>Dashboard
+      </a></li>
+    </ul>
+
+    <p class="sidebar-section">Manage</p>
+    <ul class="sidebar-nav">
+      <li><a href="/admin/users" class="<%= currentPage==='users'?'active':'' %>">
+        <i class="bi bi-people"></i>Users
+      </a></li>
+      <li><a href="/admin/users?role=donor" class="<%= currentPage==='donors'?'active':'' %>">
+        <i class="bi bi-hand-thumbs-up"></i>Donors
+      </a></li>
+      <li><a href="/admin/users?role=ngo" class="<%= currentPage==='ngos'?'active':'' %>">
+        <i class="bi bi-building"></i>NGOs
+      </a></li>
+      <li><a href="/admin/donations" class="<%= currentPage==='donations'?'active':'' %>">
+        <i class="bi bi-box-seam"></i>Donations
+      </a></li>
+    </ul>
+
+    <p class="sidebar-section">Insights</p>
+    <ul class="sidebar-nav">
+      <li><a href="/admin/analytics" class="<%= currentPage==='analytics'?'active':'' %>">
+        <i class="bi bi-bar-chart-line"></i>Analytics
+      </a></li>
+    </ul>
+
+    <p class="sidebar-section">System</p>
+    <ul class="sidebar-nav">
+      <li><a href="/admin/settings" class="<%= currentPage==='settings'?'active':'' %>">
+        <i class="bi bi-gear"></i>Settings
+      </a></li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-avatar">👤</div>
+      <div>
+        <div class="sidebar-user-name"><%= user.name %></div>
+        <div class="sidebar-user-role">Administrator</div>
+      </div>
+      <a href="/logout" class="sidebar-logout" title="Logout"><i class="bi bi-box-arrow-right"></i></a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="admin-main">
+    <!-- Top bar -->
+    <div class="admin-topbar">
+      <div class="d-flex align-items-center gap-3">
+        <button class="d-md-none btn btn-sm" style="border:none;font-size:1.3rem;" onclick="document.getElementById('adminSidebar').classList.toggle('open')">
+          <i class="bi bi-list"></i>
+        </button>
+        <h1 class="topbar-title"><%= pageTitle || 'Admin Panel' %></h1>
+      </div>
+      <div class="topbar-right">
+        <span class="topbar-time" id="adminClock"></span>
+        <a href="/" style="font-size:.82rem;color:#6b7280;text-decoration:none;">
+          <i class="bi bi-arrow-left me-1"></i>Back to App
+        </a>
+      </div>
+    </div>
+
+    <!-- Content injected by each page -->
+    <div class="admin-content">

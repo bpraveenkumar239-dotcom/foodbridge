@@ -1,0 +1,200 @@
+<%- include('../partials/header', {title: 'Set Delivery Location – FoodBridge'}) %>
+<%- include('../partials/navbar') %>
+
+<div class="page-section">
+  <div class="container py-5">
+    <a href="/ngo/requests" class="back-link mb-3 d-inline-flex"><i class="bi bi-arrow-left me-2"></i>Back to Requests</a>
+
+    <% const isOverride = !!(food.deliveryLocation); %>
+
+    <div class="section-header">
+      <h2 class="section-title">
+        <i class="bi bi-<%= isOverride ? 'arrow-repeat' : 'pin-map' %> me-2"></i>
+        <%= isOverride ? 'Override Delivery Location' : 'Set Delivery Location' %>
+      </h2>
+      <p class="section-subtitle">
+        <% if (isOverride) { %>
+          The donor already set a delivery location. You can change it to a more suitable or accessible location — the donor will be notified.
+        <% } else { %>
+          The donor didn't set a delivery location. Choose where to deliver the food to those in need.
+        <% } %>
+      </p>
+    </div>
+
+    <!-- Donation summary -->
+    <div class="donation-summary-card mb-4">
+      <div class="row align-items-start g-2">
+        <div class="col-auto"><span style="font-size:2rem;">🍱</span></div>
+        <div class="col">
+          <h5 class="mb-1"><%= food.name %> — <strong><%= food.quantity %></strong></h5>
+          <p class="mb-1 text-muted small"><i class="bi bi-person me-1"></i>Donor: <strong><%= food.donorName %></strong>
+            <% if (food.donorPhone) { %>
+              &nbsp;<a href="tel:<%= food.donorPhone %>" style="color:#1a4a2e;font-weight:600;text-decoration:none;background:#e8f5ee;padding:2px 10px;border-radius:20px;font-size:.82rem;">
+                <i class="bi bi-telephone-fill me-1"></i><%= food.donorPhone %>
+              </a>
+            <% } %>
+          </p>
+          <p class="mb-1 text-muted small"><i class="bi bi-geo-alt me-1"></i>Pickup: <%= food.pickupLocation %></p>
+
+          <% if (food.deliveryLocation) { %>
+            <div style="background:#fef9c3;border:1.5px solid #fde68a;border-radius:8px;padding:8px 12px;margin-top:6px;font-size:.85rem;">
+              <i class="bi bi-send-check me-1 text-warning"></i>
+              <strong>Donor's delivery:</strong> <%= food.deliveryLocation %>
+              <% if (food.ngoDeliveryLocation && food.ngoOverrideDelivery) { %>
+                <br/><i class="bi bi-arrow-repeat me-1 text-primary"></i>
+                <strong>Your override:</strong> <%= food.ngoDeliveryLocation %>
+              <% } %>
+            </div>
+          <% } else if (food.ngoDeliveryLocation) { %>
+            <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:8px;padding:8px 12px;margin-top:6px;font-size:.85rem;">
+              <i class="bi bi-pin-map-fill me-1 text-primary"></i>
+              <strong>Current delivery (you set):</strong> <%= food.ngoDeliveryLocation %>
+            </div>
+          <% } %>
+        </div>
+        <div class="col-auto">
+          <span class="status-badge status-<%= food.status %>"><%= food.status.replace('_',' ').toUpperCase() %></span>
+        </div>
+      </div>
+    </div>
+
+    <% if (!isOverride) { %>
+    <div class="alert alert-info d-flex align-items-start gap-3 mb-4" style="border-radius:14px;border:2px solid #60a5fa;">
+      <span style="font-size:1.8rem;">💡</span>
+      <div style="font-size:.88rem;">
+        <strong>Suggested delivery locations:</strong>
+        <ul class="mb-0 mt-1">
+          <li>Government shelters, orphanages, old-age homes</li>
+          <li>Railway stations or bus stands with homeless population</li>
+          <li>Anganwadi centres, government schools</li>
+          <li>Community kitchens or NGO feeding points</li>
+        </ul>
+      </div>
+    </div>
+    <% } %>
+
+    <div class="form-card">
+      <form action="/ngo/set-delivery/<%= food._id %>" method="POST" id="setDeliveryForm">
+
+        <!-- If override — show reason field prominently -->
+        <% if (isOverride) { %>
+        <div class="mb-4 p-3" style="background:#fff7ed;border:2px solid #fed7aa;border-radius:12px;">
+          <label class="form-label fw-bold"><i class="bi bi-chat-text me-1 text-orange"></i>Reason for Changing Donor's Delivery Location <span class="text-muted">(optional, shared with donor)</span></label>
+          <input type="text" class="form-control fc-custom" name="ngoOverrideNote"
+            placeholder="e.g. More accessible location, closer to shelter, road blocked…"/>
+        </div>
+        <% } else { %>
+        <input type="hidden" name="ngoOverrideNote" value=""/>
+        <% } %>
+
+        <div class="col-12">
+          <label class="form-label fw-bold">
+            <% if (isOverride) { %>New Delivery Location *<% } else { %>Delivery / Needy Location *<% } %>
+          </label>
+          <div class="location-selector">
+            <div class="location-tabs">
+              <button type="button" class="loc-tab active" data-method="manual"><i class="bi bi-keyboard"></i> Type Address</button>
+              <button type="button" class="loc-tab" data-method="live"><i class="bi bi-geo-alt-fill"></i> My Location</button>
+              <button type="button" class="loc-tab" data-method="map"><i class="bi bi-map"></i> Pick on Map</button>
+            </div>
+
+            <div class="location-input-area mt-2">
+              <input type="text" class="form-control fc-custom" name="ngoDeliveryLocation"
+                id="delivLocText"
+                placeholder="<%= isOverride ? 'Enter new delivery address…' : 'e.g. XYZ Shelter, Church Street, Bengaluru' %>"
+                value="<%= food.ngoDeliveryLocation || '' %>" required/>
+              <input type="hidden" name="ngoDeliveryLatitude"  id="delivLat" value="<%= food.ngoDeliveryLatitude  || '' %>"/>
+              <input type="hidden" name="ngoDeliveryLongitude" id="delivLng" value="<%= food.ngoDeliveryLongitude || '' %>"/>
+
+              <div id="liveStatus" class="location-status mt-2" style="display:none;">
+                <div class="spinner-border spinner-border-sm text-success me-2"></div>Detecting your location…
+              </div>
+
+              <div id="mapContainer" class="map-container mt-3" style="display:none;">
+                <div id="delivMap" style="height:350px;border-radius:12px;"></div>
+                <p class="map-hint"><i class="bi bi-cursor me-1"></i>Click anywhere on the map to set delivery point</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions mt-4">
+          <button type="submit" class="btn btn-primary btn-lg btn-submit">
+            <i class="bi bi-check2-circle me-2"></i>
+            <%= isOverride ? 'Save New Delivery Location' : 'Save Delivery Location' %>
+          </button>
+          <a href="/ngo/navigate/<%= food._id %>" class="btn btn-ghost ms-3">Skip & Navigate</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.text-orange { color:#f97316; }
+</style>
+
+<script>
+let delivMap = null, delivMarker = null;
+
+document.querySelectorAll('.loc-tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.loc-tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+    const method = this.dataset.method;
+    document.getElementById('liveStatus').style.display  = 'none';
+    document.getElementById('mapContainer').style.display = 'none';
+
+    if (method === 'live') {
+      document.getElementById('liveStatus').style.display = 'flex';
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude, lng = pos.coords.longitude;
+        document.getElementById('delivLat').value = lat;
+        document.getElementById('delivLng').value = lng;
+        reverseGeocode(lat, lng, 'delivLocText');
+        document.getElementById('liveStatus').style.display = 'none';
+      }, () => {
+        document.getElementById('liveStatus').innerHTML = '<i class="bi bi-x-circle text-danger me-2"></i>Location denied.';
+      });
+    } else if (method === 'map') {
+      document.getElementById('mapContainer').style.display = 'block';
+      if (!delivMap) {
+        delivMap = L.map('delivMap').setView([12.9716, 77.5946], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap' }).addTo(delivMap);
+        delivMap.on('click', function(e) {
+          const lat = e.latlng.lat, lng = e.latlng.lng;
+          if (delivMarker) delivMap.removeLayer(delivMarker);
+          delivMarker = L.marker([lat, lng], {
+            icon: L.divIcon({ className:'', html:'<div style="background:#3b82f6;width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:12px;">🏠</div>', iconSize:[24,24], iconAnchor:[12,12] })
+          }).addTo(delivMap).bindPopup('Delivery point').openPopup();
+          document.getElementById('delivLat').value = lat;
+          document.getElementById('delivLng').value = lng;
+          reverseGeocode(lat, lng, 'delivLocText');
+        });
+      } else { setTimeout(() => delivMap.invalidateSize(), 100); }
+    }
+  });
+});
+
+function reverseGeocode(lat, lng, id) {
+  fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+    .then(r => r.json())
+    .then(d => { document.getElementById(id).value = d.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`; })
+    .catch(() => { document.getElementById(id).value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`; });
+}
+
+// Pre-place existing marker if coords available
+window.addEventListener('load', function() {
+  const lat = parseFloat('<%= food.ngoDeliveryLatitude || "" %>');
+  const lng = parseFloat('<%= food.ngoDeliveryLongitude || "" %>');
+  // show on map if tab is active (it isn't by default, just init silently)
+});
+
+document.getElementById('setDeliveryForm').addEventListener('submit', function(e) {
+  if (!document.getElementById('delivLocText').value.trim()) {
+    e.preventDefault(); alert('Please enter or pick a delivery location.');
+  }
+});
+</script>
+
+<%- include('../partials/footer') %>

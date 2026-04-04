@@ -1,0 +1,44 @@
+<%- include('../partials/header', {title: 'Login – FoodBridge'}) %>
+
+<div class="auth-page">
+  <div class="auth-bg-overlay"></div>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <span class="auth-logo-icon">🌿</span>
+        <h1 class="auth-title">FoodBridge</h1>
+        <p class="auth-subtitle">Connecting hearts through food</p>
+      </div>
+
+      <% if (error) { %>
+        <div class="alert alert-danger alert-sm"><i class="bi bi-exclamation-circle me-2"></i><%= error %></div>
+      <% } %>
+      <% if (success) { %>
+        <div class="alert alert-success alert-sm"><i class="bi bi-check-circle me-2"></i><%= success %></div>
+      <% } %>
+
+      <form action="/login" method="POST" class="auth-form">
+        <div class="form-floating mb-3">
+          <input type="email" class="form-control" id="email" name="email" placeholder="Email" required/>
+          <label for="email"><i class="bi bi-envelope me-2"></i>Email Address</label>
+        </div>
+        <div class="form-floating mb-4">
+          <input type="password" class="form-control" id="password" name="password" placeholder="Password" required/>
+          <label for="password"><i class="bi bi-lock me-2"></i>Password</label>
+        </div>
+        <button type="submit" class="btn btn-primary btn-auth w-100">
+          <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+        </button>
+      </form>
+
+      <div class="auth-divider"><span>New here?</span></div>
+      <a href="/register" class="btn btn-outline-auth w-100">Create an Account</a>
+
+      <div class="auth-quote">
+        <p>"No one has ever become poor by giving." — Anne Frank</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

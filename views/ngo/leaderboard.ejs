@@ -1,0 +1,95 @@
+<%- include('../partials/header', {title: 'Leaderboard – FoodBridge'}) %>
+<%- include('../partials/navbar') %>
+
+<div class="page-section">
+  <div class="container py-5">
+    <div class="section-header text-center mb-5">
+      <h2 class="section-title"><i class="bi bi-trophy-fill text-warning me-2"></i>Leaderboard</h2>
+      <p class="section-subtitle">Celebrating our most impactful donors and NGOs</p>
+    </div>
+
+    <div class="row g-5">
+      <!-- Top Donors -->
+      <div class="col-lg-6">
+        <div class="form-card">
+          <h4 style="font-family:'Playfair Display',serif;color:#1a4a2e;margin-bottom:24px;text-align:center;">
+            🤝 Top Donors
+          </h4>
+          <% if (topDonors.length === 0) { %>
+            <div class="empty-state"><div class="empty-icon">🍽️</div><p>No donations yet!</p></div>
+          <% } else { %>
+            <% topDonors.forEach((d, i) => { %>
+              <div class="lb-row <%= i < 3 ? 'lb-top' : '' %>">
+                <div class="lb-rank">
+                  <% if (i===0) { %><span class="lb-medal" style="color:#fbbf24;">🥇</span>
+                  <% } else if (i===1) { %><span class="lb-medal" style="color:#9ca3af;">🥈</span>
+                  <% } else if (i===2) { %><span class="lb-medal" style="color:#cd7f32;">🥉</span>
+                  <% } else { %><span class="lb-num"><%= i+1 %></span><% } %>
+                </div>
+                <div class="lb-avatar">🤝</div>
+                <div class="lb-info">
+                  <div class="lb-name"><%= d.name || d._id %></div>
+                  <div class="lb-sub"><%= d._id %></div>
+                </div>
+                <div class="lb-stats">
+                  <div class="lb-count"><%= d.delivered %> <span>delivered</span></div>
+                  <div class="lb-total"><%= d.count %> total</div>
+                </div>
+              </div>
+            <% }) %>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Top NGOs -->
+      <div class="col-lg-6">
+        <div class="form-card">
+          <h4 style="font-family:'Playfair Display',serif;color:#1a4a2e;margin-bottom:24px;text-align:center;">
+            🏥 Top NGOs
+          </h4>
+          <% if (topNGOs.length === 0) { %>
+            <div class="empty-state"><div class="empty-icon">🏥</div><p>No deliveries yet!</p></div>
+          <% } else { %>
+            <% topNGOs.forEach((n, i) => { %>
+              <div class="lb-row <%= i < 3 ? 'lb-top' : '' %>">
+                <div class="lb-rank">
+                  <% if (i===0) { %><span class="lb-medal" style="color:#fbbf24;">🥇</span>
+                  <% } else if (i===1) { %><span class="lb-medal" style="color:#9ca3af;">🥈</span>
+                  <% } else if (i===2) { %><span class="lb-medal" style="color:#cd7f32;">🥉</span>
+                  <% } else { %><span class="lb-num"><%= i+1 %></span><% } %>
+                </div>
+                <div class="lb-avatar">🏥</div>
+                <div class="lb-info">
+                  <div class="lb-name"><%= n.name || n._id %></div>
+                  <div class="lb-sub"><%= n._id %></div>
+                </div>
+                <div class="lb-stats">
+                  <div class="lb-count"><%= n.count %> <span>delivered</span></div>
+                </div>
+              </div>
+            <% }) %>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.lb-row { display:flex; align-items:center; gap:12px; padding:14px 12px; border-radius:12px; margin-bottom:8px; transition:all .2s; border:2px solid transparent; }
+.lb-row:hover { background:#f9fafb; border-color:#e5e7eb; }
+.lb-top { background:linear-gradient(90deg,#fffbeb,#fff); }
+.lb-rank { width:36px; text-align:center; flex-shrink:0; }
+.lb-medal { font-size:1.6rem; }
+.lb-num { width:28px; height:28px; border-radius:50%; background:#e5e7eb; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:.82rem; color:#6b7280; }
+.lb-avatar { width:38px; height:38px; border-radius:50%; background:#e8f5ee; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
+.lb-info { flex:1; min-width:0; }
+.lb-name { font-weight:700; font-size:.9rem; color:#1a4a2e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lb-sub  { font-size:.72rem; color:#9ca3af; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lb-stats { text-align:right; flex-shrink:0; }
+.lb-count { font-size:1.2rem; font-weight:700; font-family:'Playfair Display',serif; color:#22c55e; }
+.lb-count span { font-size:.7rem; font-family:'DM Sans',sans-serif; font-weight:500; color:#6b7280; }
+.lb-total { font-size:.72rem; color:#9ca3af; }
+</style>
+
+<%- include('../partials/footer') %>

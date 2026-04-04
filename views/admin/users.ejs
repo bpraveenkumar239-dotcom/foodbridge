@@ -1,0 +1,159 @@
+<%- include('layout-start', {title:'Users – Admin', pageTitle:'User Management', currentPage:'users'}) %>
+
+<!-- Filter bar -->
+<form method="GET" action="/admin/users" class="filter-bar">
+  <input type="text" name="search" placeholder="🔍 Search name or email…" value="<%= query.search||'' %>"/>
+  <select name="role">
+    <option value="">All Roles</option>
+    <option value="donor" <%=query.role==='donor'?'selected':''%>>Donors</option>
+    <option value="ngo"   <%=query.role==='ngo'  ?'selected':''%>>NGOs</option>
+  </select>
+  <select name="status">
+    <option value="">All Status</option>
+    <option value="active" <%=query.status==='active'?'selected':''%>>Active</option>
+    <option value="banned" <%=query.status==='banned'?'selected':''%>>Banned</option>
+  </select>
+  <button type="submit" class="btn-filter"><i class="bi bi-search me-1"></i>Search</button>
+  <a href="/admin/users" class="btn-reset">Reset</a>
+  <span style="margin-left:auto;font-size:.82rem;color:#6b7280;"><%= total %> user<%= total!==1?"s":"" %></span><a href="/admin/export/users" style="background:#22c55e;color:#fff;border:none;border-radius:10px;padding:9px 18px;font-size:.85rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px;"><i class="bi bi-download"></i>Export CSV</a>
+</form>
+
+<!-- Table -->
+<div class="admin-card" style="padding:0;overflow:hidden;">
+  <% if(users.length === 0) { %>
+    <div style="text-align:center;padding:60px 20px;color:#9ca3af;">
+      <div style="font-size:3rem;">👥</div>
+      <p>No users found for this filter.</p>
+    </div>
+  <% } else { %>
+    <div style="overflow-x:auto;">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Role</th>
+            <th>Phone</th>
+            <th>Joined</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% users.forEach(u => { %>
+          <tr>
+            <td>
+              <div style="font-weight:600;"><%= u.name %></div>
+              <div style="font-size:.78rem;color:#9ca3af;"><%= u.email %></div>
+              <% if(u.organization){ %><div style="font-size:.75rem;color:#3b82f6;"><%= u.organization %></div><% } %>
+            </td>
+            <td><span class="role-<%= u.role %>"><%= u.role.toUpperCase() %></span></td>
+            <td style="font-size:.85rem;"><%= u.phone || '<span style="color:#d1d5db;">—</span>' %></td>
+            <td style="font-size:.78rem;color:#6b7280;white-space:nowrap;">
+              <%= new Date(u.createdAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) %>
+            </td>
+            <td>
+              <% if(u.isBanned){ %>
+                <span class="badge-banned">BANNED</span>
+              <% } else { %>
+                <span class="badge-active">ACTIVE</span>
+              <% } %>
+            </td>
+            <td>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <a href="/admin/users/<%= u._id %>" class="btn-admin-sm btn-info-sm">
+                  <i class="bi bi-eye"></i> View
+                </a>
+                <% if(u.isBanned) { %>
+                  <form action="/admin/users/<%= u._id %>/unban" method="POST" style="display:inline;">
+                    <button type="submit" class="btn-admin-sm btn-success-sm">
+                      <i class="bi bi-unlock"></i> Unban
+                    </button>
+                  </form>
+                <% } else { %>
+                  <button class="btn-admin-sm btn-warn-sm" onclick="openBanModal('<%= u._id %>','<%= u.name.replace(/'/g,'') %>')">
+                    <i class="bi bi-ban"></i> Ban
+                  </button>
+                <% } %>
+                <button class="btn-admin-sm btn-danger-sm" onclick="confirmDelete('<%= u._id %>','<%= u.name.replace(/'/g,'') %>')">
+                  <i class="bi bi-trash3"></i> Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<!-- Pagination -->
+<% const totalPages = Math.ceil(total/limit); %>
+<% if(totalPages > 1) { %>
+  <div class="admin-pagination">
+    <a href="?<%= new URLSearchParams({...query, page: page-1}).toString() %>" class="<%= page<=1?'disabled':'' %>">← Prev</a>
+    <% for(let p=1;p<=totalPages;p++) { %>
+      <a href="?<%= new URLSearchParams({...query, page: p}).toString() %>" class="<%= p===page?'active':'' %>"><%= p %></a>
+    <% } %>
+    <a href="?<%= new URLSearchParams({...query, page: page+1}).toString() %>" class="<%= page>=totalPages?'disabled':'' %>">Next →</a>
+  </div>
+<% } %>
+
+<!-- Ban Modal -->
+<div class="modal fade" id="banModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">🚫 Ban User</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="banForm" method="POST">
+        <div class="modal-body">
+          <p>You are about to ban <strong id="banUserName"></strong>. They will not be able to login.</p>
+          <label class="form-label fw-bold">Reason for ban (optional)</label>
+          <textarea name="reason" class="form-control" rows="3" placeholder="Spam, abuse, fake account…"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger">Confirm Ban</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">🗑️ Delete User</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Permanently delete <strong id="deleteUserName"></strong>? This cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <form id="deleteForm" method="POST" style="display:inline;">
+          <button type="submit" class="btn btn-danger">Delete Permanently</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openBanModal(id, name) {
+  document.getElementById('banUserName').textContent = name;
+  document.getElementById('banForm').action = '/admin/users/' + id + '/ban';
+  new bootstrap.Modal(document.getElementById('banModal')).show();
+}
+function confirmDelete(id, name) {
+  document.getElementById('deleteUserName').textContent = name;
+  document.getElementById('deleteForm').action = '/admin/users/' + id + '/delete';
+  new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+
+<%- include('layout-end') %>

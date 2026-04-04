@@ -1,0 +1,209 @@
+<%- include('layout-start', {title: donation.name+' – Admin', pageTitle:'Donation Detail', currentPage:'donations'}) %>
+
+<a href="/admin/donations" class="btn-admin-sm btn-info-sm mb-4 d-inline-flex align-items-center gap-1">
+  <i class="bi bi-arrow-left"></i> Back to Donations
+</a>
+
+<div class="row g-4">
+  <!-- Left: details -->
+  <div class="col-lg-5">
+    <!-- Food Info -->
+    <div class="admin-card">
+      <div class="admin-card-title"><i class="bi bi-box-seam text-warning"></i>Food Details</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:2.5rem;">🍱</span>
+          <div>
+            <h4 style="font-family:'Playfair Display',serif;color:#1a4a2e;margin:0;"><%= donation.name %></h4>
+            <span class="status-badge status-<%= donation.status %>"><%= donation.status.replace('_',' ').toUpperCase() %></span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:.88rem;">
+          <div style="background:#f9fafb;border-radius:10px;padding:12px;">
+            <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-bottom:4px;">Quantity</div>
+            <div style="font-weight:700;color:#1a4a2e;"><%= donation.quantity %></div>
+          </div>
+          <div style="background:#f9fafb;border-radius:10px;padding:12px;">
+            <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-bottom:4px;">Created</div>
+            <div style="font-weight:700;color:#1a4a2e;"><%= new Date(donation.createdAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) %></div>
+          </div>
+          <% if(donation.acceptedAt){ %>
+          <div style="background:#f9fafb;border-radius:10px;padding:12px;">
+            <div style="font-size:.7rem;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">Accepted</div>
+            <div style="font-weight:700;"><%= new Date(donation.acceptedAt).toLocaleString('en-IN') %></div>
+          </div>
+          <% } %>
+          <% if(donation.deliveredAt){ %>
+          <div style="background:#f9fafb;border-radius:10px;padding:12px;">
+            <div style="font-size:.7rem;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">Delivered</div>
+            <div style="font-weight:700;"><%= new Date(donation.deliveredAt).toLocaleString('en-IN') %></div>
+          </div>
+          <% } %>
+        </div>
+        <% if(donation.description){ %>
+          <div style="background:#fffbeb;border-radius:10px;padding:12px;font-size:.85rem;color:#92400e;">
+            <i class="bi bi-chat-text me-1"></i><%= donation.description %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Donor -->
+    <div class="admin-card">
+      <div class="admin-card-title"><i class="bi bi-person text-success"></i>Donor</div>
+      <% if(donor){ %>
+        <div style="font-weight:700;font-size:1rem;"><%= donor.name %></div>
+        <div style="font-size:.82rem;color:#6b7280;"><%= donor.email %></div>
+        <% if(donor.phone){ %>
+          <a href="tel:<%= donor.phone %>" style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;background:#e8f5ee;padding:5px 14px;border-radius:20px;color:#1a4a2e;font-weight:600;font-size:.85rem;text-decoration:none;">
+            <i class="bi bi-telephone-fill"></i><%= donor.phone %>
+          </a>
+        <% } %>
+        <% if(donor.address){ %><div style="font-size:.82rem;color:#6b7280;margin-top:6px;"><i class="bi bi-geo-alt me-1"></i><%= donor.address %></div><% } %>
+        <a href="/admin/users/<%= donor._id %>" class="btn-admin-sm btn-info-sm mt-3 d-inline-block">View Profile →</a>
+      <% } else { %><p class="text-muted">Donor not found</p><% } %>
+    </div>
+
+    <!-- NGO -->
+    <div class="admin-card">
+      <div class="admin-card-title"><i class="bi bi-building text-primary"></i>Assigned NGO</div>
+      <% if(ngo){ %>
+        <div style="font-weight:700;font-size:1rem;"><%= ngo.name %></div>
+        <% if(ngo.organization){ %><div style="font-size:.82rem;color:#3b82f6;"><%= ngo.organization %></div><% } %>
+        <div style="font-size:.82rem;color:#6b7280;"><%= ngo.email %></div>
+        <% if(ngo.phone){ %>
+          <a href="tel:<%= ngo.phone %>" style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;background:#dbeafe;padding:5px 14px;border-radius:20px;color:#1e40af;font-weight:600;font-size:.85rem;text-decoration:none;">
+            <i class="bi bi-telephone-fill"></i><%= ngo.phone %>
+          </a>
+        <% } %>
+        <a href="/admin/users/<%= ngo._id %>" class="btn-admin-sm btn-info-sm mt-3 d-inline-block">View Profile →</a>
+      <% } else { %><p class="text-muted" style="font-size:.88rem;">No NGO assigned yet</p><% } %>
+    </div>
+
+    <!-- Force Status -->
+    <div class="admin-card" style="border:2px solid #fef3c7;">
+      <div class="admin-card-title" style="color:#d97706;"><i class="bi bi-shield-exclamation"></i>Override Status</div>
+      <p style="font-size:.82rem;color:#6b7280;">Force-update the donation status as admin.</p>
+      <form action="/admin/donations/<%= donation._id %>/status" method="POST">
+        <div style="display:flex;gap:10px;">
+          <select name="status" class="form-select" style="border-radius:10px;border:2px solid #e5e7eb;">
+            <option value="pending"   <%=donation.status==='pending'  ?'selected':''%>>Pending</option>
+            <option value="accepted"  <%=donation.status==='accepted' ?'selected':''%>>Accepted</option>
+            <option value="picked_up" <%=donation.status==='picked_up'?'selected':''%>>Picked Up</option>
+            <option value="delivered" <%=donation.status==='delivered'?'selected':''%>>Delivered</option>
+            <option value="rejected"  <%=donation.status==='rejected' ?'selected':''%>>Rejected</option>
+          </select>
+          <button type="submit" class="btn-admin-sm btn-warn-sm" style="white-space:nowrap;padding:8px 16px;">
+            <i class="bi bi-arrow-repeat me-1"></i>Update
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Delete -->
+    <div class="admin-card" style="border:2px solid #fee2e2;">
+      <div class="admin-card-title" style="color:#ef4444;"><i class="bi bi-trash3"></i>Delete Donation</div>
+      <form action="/admin/donations/<%= donation._id %>/delete" method="POST"
+        onsubmit="return confirm('Delete this donation permanently?')">
+        <button type="submit" class="btn btn-danger w-100" style="border-radius:10px;font-family:'DM Sans',sans-serif;font-weight:600;">
+          Delete Permanently
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right: map -->
+  <div class="col-lg-7">
+    <div class="admin-card" style="padding:0;overflow:hidden;">
+      <div style="padding:16px 20px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:8px;">
+        <strong style="font-family:'DM Sans',sans-serif;">📍 Location Map</strong>
+      </div>
+      <div id="adminDonMap" style="height:380px;"></div>
+      <div style="padding:14px 20px;display:flex;gap:16px;flex-wrap:wrap;background:#fafafa;border-top:1px solid #f3f4f6;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:.8rem;color:#4b5563;">
+          <span style="width:12px;height:12px;border-radius:50%;background:#f97316;display:inline-block;"></span>Pickup
+        </div>
+        <% if(donation.deliveryLocation || donation.ngoDeliveryLocation){ %>
+        <div style="display:flex;align-items:center;gap:6px;font-size:.8rem;color:#4b5563;">
+          <span style="width:12px;height:12px;border-radius:50%;background:#3b82f6;display:inline-block;"></span>Delivery
+        </div>
+        <% } %>
+        <% if(donation.ngoLatitude){ %>
+        <div style="display:flex;align-items:center;gap:6px;font-size:.8rem;color:#4b5563;">
+          <span style="width:12px;height:12px;border-radius:50%;background:#22c55e;display:inline-block;"></span>NGO Last Location
+        </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Locations -->
+    <div class="admin-card">
+      <div class="admin-card-title"><i class="bi bi-pin-map text-warning"></i>Locations</div>
+      <div style="display:flex;flex-direction:column;gap:10px;font-size:.88rem;">
+        <div style="background:#fff7ed;border-radius:10px;padding:12px;">
+          <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;color:#92400e;margin-bottom:4px;">📦 Pickup</div>
+          <div><%= donation.pickupLocation %></div>
+          <% if(donation.pickupLatitude){ %>
+            <div style="font-size:.75rem;color:#9ca3af;margin-top:2px;"><%= donation.pickupLatitude.toFixed(5) %>, <%= donation.pickupLongitude.toFixed(5) %></div>
+          <% } %>
+        </div>
+        <% if(donation.deliveryLocation || donation.ngoDeliveryLocation){ %>
+        <div style="background:#eff6ff;border-radius:10px;padding:12px;">
+          <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;color:#1e40af;margin-bottom:4px;">
+            🏠 Delivery <%= donation.ngoDeliveryLocation && !donation.deliveryLocation ? '(NGO chose)' : '(Donor set)' %>
+          </div>
+          <div><%= donation.deliveryLocation || donation.ngoDeliveryLocation %></div>
+        </div>
+        <% } %>
+        <% if(donation.ngoLatitude){ %>
+        <div style="background:#f0fdf4;border-radius:10px;padding:12px;">
+          <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;color:#065f46;margin-bottom:4px;">🚗 NGO Last Known</div>
+          <div style="font-size:.78rem;color:#6b7280;"><%= donation.ngoLatitude.toFixed(5) %>, <%= donation.ngoLongitude.toFixed(5) %></div>
+          <% if(donation.ngoLastUpdate){ %>
+            <div style="font-size:.75rem;color:#9ca3af;">Updated: <%= new Date(donation.ngoLastUpdate).toLocaleString('en-IN') %></div>
+          <% } %>
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('load', function() {
+  const map = L.map('adminDonMap').setView([12.9716, 77.5946], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap', maxZoom:19 }).addTo(map);
+
+  function mkIcon(bg,emoji,sz){ sz=sz||36;
+    return L.divIcon({ className:'',
+      html:`<div style="background:${bg};width:${sz}px;height:${sz}px;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:${Math.round(sz*.44)}px;">${emoji}</div>`,
+      iconSize:[sz,sz],iconAnchor:[sz/2,sz/2] });
+  }
+
+  const pts = [];
+  <% if(donation.pickupLatitude){ %>
+    L.marker([<%- donation.pickupLatitude %>, <%- donation.pickupLongitude %>], {icon:mkIcon('#f97316','📦',38)})
+      .addTo(map).bindPopup('<b>📦 Pickup</b><br><small><%- donation.pickupLocation.replace(/'/g,"") %></small>');
+    pts.push([<%- donation.pickupLatitude %>, <%- donation.pickupLongitude %>]);
+  <% } %>
+  <% const dLat = donation.deliveryLatitude || donation.ngoDeliveryLatitude; %>
+  <% const dLng = donation.deliveryLongitude || donation.ngoDeliveryLongitude; %>
+  <% const dAddr = donation.deliveryLocation || donation.ngoDeliveryLocation; %>
+  <% if(dLat){ %>
+    L.marker([<%- dLat %>, <%- dLng %>], {icon:mkIcon('#3b82f6','🏠',38)})
+      .addTo(map).bindPopup('<b>🏠 Delivery</b><br><small><%- (dAddr||'').replace(/'/g,"") %></small>');
+    pts.push([<%- dLat %>, <%- dLng %>]);
+  <% } %>
+  <% if(donation.ngoLatitude){ %>
+    L.marker([<%- donation.ngoLatitude %>, <%- donation.ngoLongitude %>], {icon:mkIcon('#22c55e','🚗',38)})
+      .addTo(map).bindPopup('<b>🚗 NGO Last Location</b>');
+    pts.push([<%- donation.ngoLatitude %>, <%- donation.ngoLongitude %>]);
+  <% } %>
+
+  if(pts.length === 1) map.setView(pts[0], 14);
+  else if(pts.length > 1) map.fitBounds(L.latLngBounds(pts), {padding:[40,40]});
+  setTimeout(()=>map.invalidateSize(), 300);
+});
+</script>
+
+<%- include('layout-end') %>
