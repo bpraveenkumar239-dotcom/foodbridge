@@ -50,7 +50,7 @@ app.use((req, res, next) => { res.locals.user = req.session.user || null; next()
 app.use('/',      require('./routes/auth'));
 app.use('/donor', require('./routes/donor'));
 app.use('/ngo',   require('./routes/ngo'));
-app.use('/api',   require('./routes/api'));
+//app.use('/api',   require('./routes/api'));
 app.use('/admin', require('./routes/admin'));
 
 app.get('/', (req, res) => {

@@ -96,7 +96,6 @@ router.post('/expire-check', async (req, res) => {
   } catch (err) { res.json({ success: false }); }
 });
 
-module.exports = router;
 
 // Public: get all active needy locations (for donor delivery form + NGO set-delivery)
 router.get('/needy-locations', requireAuth, async (req, res) => {
