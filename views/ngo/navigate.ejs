@@ -44,11 +44,7 @@
     #gpsStatus.err {background:#fee2e2;color:#991b1b;}
 
     #ngoMap{width:100%;height:460px;display:block;}
-    #streetViewContainer{width:100%;height:460px;display:none;background:#111;position:relative;}
-    #streetViewIframe{width:100%;height:100%;border:none;}
-    .sv-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;gap:12px;font-family:'DM Sans',sans-serif;}
-    .sv-click-hint{font-size:.85rem;color:rgba(255,255,255,.6);text-align:center;padding:0 20px;}
-    @media(max-width:768px){#ngoMap,#streetViewContainer{height:320px;}}
+    @media(max-width:768px){#ngoMap{height:300px;}}
 
     .inst-panel{background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:14px;max-height:220px;overflow-y:auto;}
     .inst-panel h6{font-size:.75rem;text-transform:uppercase;letter-spacing:.7px;color:#6b7280;margin-bottom:10px;}
@@ -81,9 +77,7 @@
     .ldot{width:13px;height:13px;border-radius:50%;flex-shrink:0;}
     .lline{width:20px;height:5px;border-radius:2px;flex-shrink:0;}
 
-    /* Street View click-on-map cursor indicator */
-    #ngoMap.sv-mode{cursor:crosshair!important;}
-    .sv-mode-hint{background:#1a4a2e;color:#fff;font-size:.78rem;padding:6px 14px;border-radius:20px;display:inline-flex;align-items:center;gap:6px;margin-bottom:8px;}
+
   </style>
 </head>
 <body>
@@ -202,36 +196,23 @@
     </div>
   </div>
 
-  <!-- Map + Street View tabs -->
+  <!-- Map -->
   <div class="map-shell">
-    <div class="map-tabs-bar">
-      <button class="map-tab-btn active" id="tabMap" onclick="switchTab('map')">
-        <i class="bi bi-map"></i> Route Map
-      </button>
-      <button class="map-tab-btn" id="tabSV" onclick="switchTab('sv')">
-        <i class="bi bi-camera"></i> Street View
-        <span style="font-size:.65rem;background:#e5e7eb;padding:2px 6px;border-radius:8px;margin-left:4px;">Click map</span>
-      </button>
-    </div>
     <div class="map-header">
-      <h5><span style="color:#ef4444;">⬤</span>&nbsp;
+      <h5 style="font-size:.9rem;"><span style="color:#ef4444;">⬤</span>&nbsp;
         <span id="mapTabLabel">
           <% if (food.status === 'accepted') { %>🟠 Route: You → Pickup<% } else { %>🔵 Route: Pickup → Delivery<% } %>
         </span>
       </h5>
-      <span id="gpsStatus"><i class="bi bi-hourglass-split me-1"></i>Getting GPS…</span>
-    </div>
-    <div id="svModeHintBar" style="display:none;padding:8px 16px;background:#f0fdf4;border-bottom:1px solid #dcfce7;">
-      <span class="sv-mode-hint"><i class="bi bi-camera me-1"></i>Street View mode — click any point on the map to open street view there</span>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span id="gpsStatus"><i class="bi bi-hourglass-split me-1"></i>Getting GPS…</span>
+        <a id="gmapsBtn" href="#" target="_blank" rel="noopener"
+          style="background:#4285F4;color:#fff;border-radius:8px;padding:5px 12px;font-size:.75rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;min-height:32px;">
+          <i class="bi bi-map-fill"></i> Google Maps
+        </a>
+      </div>
     </div>
     <div id="ngoMap"></div>
-    <div id="streetViewContainer">
-      <div class="sv-placeholder" id="svPlaceholder">
-        <i class="bi bi-camera" style="font-size:3rem;opacity:.4;"></i>
-        <div class="sv-click-hint">Click any point on the route map tab to open street-level imagery here via Mapillary</div>
-      </div>
-      <iframe id="streetViewIframe" style="display:none;"></iframe>
-    </div>
   </div>
 
   <!-- Legend -->
@@ -316,7 +297,6 @@ let map, mNGO=null, mPickup=null, mDelivery=null, routeLine=null;
 let myLat=null, myLng=null;
 let instructions=[], currentStep=0;
 let routeFetched=false, lastRouteFetch=0;
-let svMode=false;
 
 /* ── Helpers ── */
 function hvDist(la1,lo1,la2,lo2){
@@ -335,31 +315,22 @@ function mkIcon(bg,emoji,sz){
 }
 const iNGO=mkIcon('#22c55e','🚗',44), iPickup=mkIcon('#f97316','📦',40), iDelivery=mkIcon('#3b82f6','🏠',40);
 
-/* ── Tab switching ── */
-function switchTab(tab) {
-  document.getElementById('tabMap').classList.toggle('active', tab==='map');
-  document.getElementById('tabSV').classList.toggle('active', tab==='sv');
-  document.getElementById('ngoMap').style.display           = tab==='map' ? 'block' : 'none';
-  document.getElementById('streetViewContainer').style.display = tab==='sv'  ? 'block' : 'none';
-  document.getElementById('svModeHintBar').style.display    = tab==='sv'  ? 'block' : 'none';
-  svMode = (tab === 'sv');
-  document.getElementById('ngoMap').classList.toggle('sv-mode', svMode);
-  if (tab === 'map') setTimeout(() => map.invalidateSize(), 100);
-}
-
-/* ── Open Street View via Mapillary ── */
-function openStreetView(lat, lng) {
-  const iframe = document.getElementById('streetViewIframe');
-  const placeholder = document.getElementById('svPlaceholder');
-  // Mapillary viewer — free, no API key for basic embed
-  const url = `https://www.mapillary.com/embed?image_key=&lat=${lat}&lng=${lng}&zoom=17`;
-  // Fallback: use a direct Mapillary link in an iframe
-  const mapillaryUrl = `https://www.mapillary.com/app/?lat=${lat}&lng=${lng}&z=17&menu=false`;
-  iframe.src = mapillaryUrl;
-  iframe.style.display = 'block';
-  placeholder.style.display = 'none';
-  // Switch to SV tab automatically
-  switchTab('sv');
+/* ── Update Google Maps link based on phase ── */
+function updateGmapsLink(myLat, myLng) {
+  const btn = document.getElementById('gmapsBtn');
+  if (!btn) return;
+  let url;
+  if (FOOD_STATUS === 'accepted' && pLat) {
+    // Leg 1: My location → Pickup
+    url = `https://www.google.com/maps/dir/?api=1&origin=${myLat},${myLng}&destination=${pLat},${pLng}&travelmode=driving`;
+  } else if (FOOD_STATUS === 'picked_up' && dLat) {
+    // Leg 2: Pickup → Delivery
+    const fromLat = pLat || myLat, fromLng = pLng || myLng;
+    url = `https://www.google.com/maps/dir/?api=1&origin=${fromLat},${fromLng}&destination=${dLat},${dLng}&travelmode=driving`;
+  } else if (pLat) {
+    url = `https://www.google.com/maps/dir/?api=1&origin=${myLat},${myLng}&destination=${pLat},${pLng}&travelmode=driving`;
+  }
+  if (url) btn.href = url;
 }
 
 /* ── OSRM route ── */
@@ -512,6 +483,7 @@ function startGPS(){
 
     advanceStep();
     drawPhaseRoute();
+    updateGmapsLink(myLat,myLng);
     fitMap();
 
     fetch('/api/ngo/location/'+FOOD_ID,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({latitude:myLat,longitude:myLng})}).catch(()=>{});
@@ -527,11 +499,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   map=L.map('ngoMap');
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
   map.setView([12.9716,77.5946],13);
-
-  // Map click → street view
-  map.on('click',e=>{
-    if(svMode) openStreetView(e.latlng.lat,e.latlng.lng);
-  });
 
   // Place pickup marker
   if(pLat&&pLng){

@@ -1,58 +1,66 @@
 <nav class="navbar navbar-expand-lg navbar-custom">
-  <div class="container-fluid px-4">
+  <div class="container-fluid px-3">
     <a class="navbar-brand" href="/">
       <span class="brand-icon">🌿</span>
       <span class="brand-text">FoodBridge</span>
     </a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
+
+    <!-- Right side: notification bell + hamburger together -->
+    <div class="d-flex align-items-center gap-1 ms-auto">
+
+      <!-- Notification Bell (not for admin, shown before hamburger) -->
+      <% if (user && user.role !== 'admin') { %>
+      <div style="position:relative;">
+        <button id="notifBell" onclick="toggleNotifPanel()" style="background:rgba(255,255,255,.1);border:none;border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;color:#fff;font-size:1.1rem;">
+          <i class="bi bi-bell"></i>
+          <span id="notifBadge" style="display:none;position:absolute;top:4px;right:4px;background:#ef4444;color:#fff;border-radius:50%;width:16px;height:16px;font-size:.58rem;font-weight:700;align-items:center;justify-content:center;line-height:1;"></span>
+        </button>
+        <!-- Panel -->
+        <div id="notifPanel" style="display:none;position:fixed;top:60px;right:8px;left:8px;max-width:400px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.25);z-index:2000;overflow:hidden;border:1.5px solid #e5e7eb;">
+          <div style="padding:14px 16px;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center;">
+            <strong style="font-size:.92rem;color:#1a4a2e;">🔔 Notifications</strong>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button onclick="markAllRead()" style="background:none;border:none;font-size:.74rem;color:#22c55e;cursor:pointer;font-weight:600;padding:0;">Mark all read</button>
+              <button onclick="closeNotifPanel()" style="background:none;border:none;font-size:1.1rem;color:#9ca3af;cursor:pointer;padding:0;line-height:1;">×</button>
+            </div>
+          </div>
+          <div id="notifList" style="max-height:60vh;overflow-y:auto;font-size:.82rem;">
+            <div style="padding:24px;text-align:center;color:#9ca3af;">Loading…</div>
+          </div>
+        </div>
+      </div>
+      <% } %>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        style="border:none;background:rgba(255,255,255,.1);border-radius:10px;padding:6px 10px;color:#fff;">
+        <i class="bi bi-list" style="font-size:1.3rem;"></i>
+      </button>
+    </div>
+
     <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ms-auto align-items-center">
+      <ul class="navbar-nav ms-auto align-items-lg-center">
         <% if (user) { %>
           <% if (user.role === 'donor') { %>
-            <li class="nav-item"><a class="nav-link" href="/donor/dashboard"><i class="bi bi-house"></i> Dashboard</a></li>
-            <li class="nav-item"><a class="nav-link" href="/donor/donate"><i class="bi bi-plus-circle"></i> Donate</a></li>
-            <li class="nav-item"><a class="nav-link" href="/donor/history"><i class="bi bi-clock-history"></i> History</a></li>
-            <li class="nav-item"><a class="nav-link" href="/donor/impact"><i class="bi bi-heart-pulse"></i> My Impact</a></li>
+            <li class="nav-item"><a class="nav-link" href="/donor/dashboard"><i class="bi bi-house me-1"></i>Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link" href="/donor/donate"><i class="bi bi-plus-circle me-1"></i>Donate</a></li>
+            <li class="nav-item"><a class="nav-link" href="/donor/history"><i class="bi bi-clock-history me-1"></i>History</a></li>
+            <li class="nav-item"><a class="nav-link" href="/donor/impact"><i class="bi bi-heart-pulse me-1"></i>Impact</a></li>
           <% } else if (user.role === 'ngo') { %>
-            <li class="nav-item"><a class="nav-link" href="/ngo/dashboard"><i class="bi bi-house"></i> Dashboard</a></li>
-            <li class="nav-item"><a class="nav-link" href="/ngo/requests"><i class="bi bi-list-check"></i> Requests</a></li>
-            <li class="nav-item"><a class="nav-link" href="/ngo/map"><i class="bi bi-map"></i> Map View</a></li>
-            <li class="nav-item"><a class="nav-link" href="/ngo/leaderboard"><i class="bi bi-trophy"></i> Leaderboard</a></li>
+            <li class="nav-item"><a class="nav-link" href="/ngo/dashboard"><i class="bi bi-house me-1"></i>Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link" href="/ngo/requests"><i class="bi bi-list-check me-1"></i>Requests</a></li>
+            <li class="nav-item"><a class="nav-link" href="/ngo/map"><i class="bi bi-map me-1"></i>Map</a></li>
+            <li class="nav-item"><a class="nav-link" href="/ngo/leaderboard"><i class="bi bi-trophy me-1"></i>Leaders</a></li>
           <% } else if (user.role === 'admin') { %>
-            <li class="nav-item"><a class="nav-link" href="/admin/dashboard"><i class="bi bi-speedometer2"></i> Admin</a></li>
-            <li class="nav-item"><a class="nav-link" href="/admin/users"><i class="bi bi-people"></i> Users</a></li>
-            <li class="nav-item"><a class="nav-link" href="/admin/donations"><i class="bi bi-box-seam"></i> Donations</a></li>
+            <li class="nav-item"><a class="nav-link" href="/admin/dashboard"><i class="bi bi-speedometer2 me-1"></i>Admin</a></li>
+            <li class="nav-item"><a class="nav-link" href="/admin/users"><i class="bi bi-people me-1"></i>Users</a></li>
+            <li class="nav-item"><a class="nav-link" href="/admin/needy-locations"><i class="bi bi-geo-alt me-1"></i>Needy Locations</a></li>
           <% } %>
-
-          <!-- Notification Bell (not for admin) -->
-          <% if (user.role !== 'admin') { %>
-          <li class="nav-item" style="position:relative;">
-            <button class="nav-link" id="notifBell" onclick="toggleNotifPanel()" style="background:none;border:none;cursor:pointer;position:relative;padding:8px 14px;">
-              <i class="bi bi-bell" style="font-size:1.1rem;"></i>
-              <span id="notifBadge" style="display:none;position:absolute;top:4px;right:8px;background:#ef4444;color:#fff;border-radius:50%;width:16px;height:16px;font-size:.62rem;font-weight:700;display:flex;align-items:center;justify-content:center;"></span>
-            </button>
-            <!-- Notification dropdown -->
-            <div id="notifPanel" style="display:none;position:absolute;right:0;top:48px;width:340px;background:#fff;border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.18);z-index:999;overflow:hidden;">
-              <div style="padding:14px 16px;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center;">
-                <strong style="font-size:.9rem;">Notifications</strong>
-                <button onclick="markAllRead()" style="background:none;border:none;font-size:.75rem;color:#22c55e;cursor:pointer;font-weight:600;">Mark all read</button>
-              </div>
-              <div id="notifList" style="max-height:320px;overflow-y:auto;font-size:.82rem;">
-                <div style="padding:24px;text-align:center;color:#9ca3af;">Loading…</div>
-              </div>
-            </div>
-          </li>
-          <% } %>
-
           <li class="nav-item">
-            <span class="nav-user-badge">
-              <%= user.name || user.email %> ·
-              <span class="role-tag" style="<%= user.role==='admin'?'background:#7c3aed;':'' %>"><%= user.role.toUpperCase() %></span>
+            <span class="nav-user-badge d-none d-lg-inline-flex">
+              <%= user.name.split(' ')[0] %> · <span class="role-tag ms-1" style="<%= user.role==='admin'?'background:#7c3aed;':'' %>"><%= user.role.toUpperCase() %></span>
             </span>
           </li>
-          <li class="nav-item"><a class="nav-link nav-logout" href="/logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+          <li class="nav-item"><a class="nav-link nav-logout" href="/logout"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
         <% } else { %>
           <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
           <li class="nav-item"><a class="nav-link nav-cta" href="/register">Register</a></li>
@@ -72,6 +80,10 @@ function toggleNotifPanel() {
   panel.style.display = notifOpen ? 'block' : 'none';
   if (notifOpen) loadNotifications();
 }
+function closeNotifPanel() {
+  notifOpen = false;
+  document.getElementById('notifPanel').style.display = 'none';
+}
 
 document.addEventListener('click', e => {
   const bell  = document.getElementById('notifBell');
@@ -81,32 +93,34 @@ document.addEventListener('click', e => {
   }
 });
 
-const typeIcons = { accepted:'✅', rejected:'❌', picked_up:'🚚', delivered:'🎉', note:'💬', rating:'⭐', expiry:'⏰', system:'📢' };
-const typeColors = { accepted:'#dcfce7', rejected:'#fee2e2', picked_up:'#dbeafe', delivered:'#ede9fe', note:'#fef3c7', rating:'#fef9c3', expiry:'#ffedd5', system:'#f3f4f6' };
+const typeIcons  = {accepted:'✅',rejected:'❌',picked_up:'🚚',delivered:'🎉',note:'💬',rating:'⭐',expiry:'⏰',system:'📢'};
+const typeBg     = {accepted:'#dcfce7',rejected:'#fee2e2',picked_up:'#dbeafe',delivered:'#ede9fe',note:'#fef9c3',rating:'#fef3c7',expiry:'#ffedd5',system:'#f3f4f6'};
 
 async function loadNotifications() {
   try {
     const r = await fetch('/api/notifications');
     const d = await r.json();
     const list = document.getElementById('notifList');
-    if (!d.notifications || d.notifications.length === 0) {
-      list.innerHTML = '<div style="padding:24px;text-align:center;color:#9ca3af;">No notifications yet</div>';
+    if (!d.notifications || !d.notifications.length) {
+      list.innerHTML = '<div style="padding:24px;text-align:center;color:#9ca3af;font-size:.85rem;">No notifications yet</div>';
       return;
     }
     list.innerHTML = d.notifications.map(n => `
-      <div style="padding:12px 16px;border-bottom:1px solid #f9fafb;background:${n.isRead?'#fff':typeColors[n.type]||'#f9fafb'};cursor:pointer;"
+      <div style="padding:12px 16px;border-bottom:1px solid #f9fafb;background:${n.isRead?'#fff':(typeBg[n.type]||'#f9fafb')};cursor:pointer;-webkit-tap-highlight-color:transparent;"
            onclick="openNotif('${n._id}','${n.foodId||''}')">
-        <div style="display:flex;gap:8px;align-items:flex-start;">
-          <span style="font-size:1rem;flex-shrink:0;">${typeIcons[n.type]||'📢'}</span>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="font-size:1.2rem;flex-shrink:0;margin-top:1px;">${typeIcons[n.type]||'📢'}</span>
           <div style="flex:1;min-width:0;">
-            <div style="font-weight:${n.isRead?'500':'700'};color:#1a4a2e;">${n.title}</div>
-            <div style="color:#6b7280;font-size:.78rem;margin-top:2px;line-height:1.4;">${n.message}</div>
-            <div style="color:#d1d5db;font-size:.7rem;margin-top:4px;">${timeAgo(n.createdAt)}</div>
+            <div style="font-weight:${n.isRead?'500':'700'};color:#1a4a2e;font-size:.84rem;">${n.title}</div>
+            <div style="color:#6b7280;font-size:.75rem;margin-top:2px;line-height:1.4;">${n.message}</div>
+            <div style="color:#d1d5db;font-size:.68rem;margin-top:3px;">${timeAgo(n.createdAt)}</div>
           </div>
           ${!n.isRead ? '<span style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;margin-top:4px;"></span>' : ''}
         </div>
       </div>`).join('');
-  } catch(e) {}
+  } catch(e) {
+    document.getElementById('notifList').innerHTML = '<div style="padding:16px;text-align:center;color:#9ca3af;font-size:.82rem;">Could not load notifications.</div>';
+  }
 }
 
 async function markAllRead() {
@@ -117,29 +131,34 @@ async function markAllRead() {
 
 async function openNotif(id, foodId) {
   await fetch('/api/notifications/'+id+'/read', { method:'POST' });
-  if (foodId) window.location.href = '<%= user && user.role === "donor" ? "/donor/track/" : "/ngo/navigate/" %>' + foodId;
+  closeNotifPanel();
+  const role = '<%= user ? user.role : "" %>';
+  if (foodId) {
+    if (role === 'donor') window.location.href = '/donor/track/' + foodId;
+    else if (role === 'ngo') window.location.href = '/ngo/requests';
+  }
 }
 
 function timeAgo(dateStr) {
-  const d = Math.floor((Date.now() - new Date(dateStr)) / 1000);
-  if (d < 60)   return 'just now';
-  if (d < 3600) return Math.floor(d/60)+'m ago';
-  if (d < 86400) return Math.floor(d/3600)+'h ago';
-  return Math.floor(d/86400)+'d ago';
+  const s = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  if (s < 60)    return 'just now';
+  if (s < 3600)  return Math.floor(s/60)+'m ago';
+  if (s < 86400) return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
 }
 
-// Poll unread count every 30s
 async function pollNotifCount() {
   try {
     const r = await fetch('/api/notifications/count');
     const d = await r.json();
     const badge = document.getElementById('notifBadge');
     if (d.count > 0) {
-      badge.style.display = 'flex'; badge.textContent = d.count > 9 ? '9+' : d.count;
+      badge.style.display = 'flex';
+      badge.textContent = d.count > 9 ? '9+' : d.count;
     } else {
       badge.style.display = 'none';
     }
-  } catch(e) {}
+  } catch(e){}
 }
 pollNotifCount();
 setInterval(pollNotifCount, 30000);

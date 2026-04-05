@@ -31,8 +31,9 @@
 
             <!-- Quick-pick food tags -->
             <div style="margin-top:12px;">
-              <div style="font-size:.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Quick Pick — South Indian Foods</div>
-              <div id="foodTagsContainer" style="display:flex;flex-wrap:wrap;gap:6px;max-height:160px;overflow-y:auto;padding:4px 0;">
+              <div style="font-size:.75rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Quick Pick — Tap one or more foods to add 👇</div>
+              <div id="selectedFoodsBar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+              <div id="foodTagsContainer" style="display:flex;flex-wrap:wrap;gap:6px;max-height:150px;overflow-y:auto;padding:4px 0;">
                 <!-- Rendered by JS -->
               </div>
             </div>
@@ -132,14 +133,21 @@
 
 <style>
 .food-tag-btn {
-  display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;
+  display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;
   background:#f3f4f6;color:#374151;border:1.5px solid #e5e7eb;
   font-size:.78rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;
-  white-space:nowrap;
+  white-space:nowrap;-webkit-tap-highlight-color:transparent;
+  min-height:36px;
 }
-.food-tag-btn:hover{background:#e8f5ee;border-color:#22c55e;color:#1a4a2e;}
+.food-tag-btn:hover,.food-tag-btn:active{background:#e8f5ee;border-color:#22c55e;color:#1a4a2e;}
 .food-tag-btn.added{background:#1a4a2e;color:#fff;border-color:#1a4a2e;}
-.food-tag-btn .add-icon{font-size:.7rem;background:rgba(255,255,255,.25);border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;}
+.food-tag-btn .add-icon{font-size:.7rem;background:rgba(255,255,255,.25);border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+/* Selected foods chips */
+#selectedFoodsBar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.sel-chip{display:inline-flex;align-items:center;gap:5px;background:#1a4a2e;color:#fff;
+  border-radius:20px;padding:4px 10px;font-size:.78rem;font-weight:600;}
+.sel-chip button{background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;padding:0 2px;font-size:.9rem;line-height:1;}
+.sel-chip button:hover{color:#fff;}
 
 #foodDropdown .dropdown-item-custom {
   padding:10px 14px;cursor:pointer;font-size:.88rem;border-bottom:1px solid #f9fafb;
@@ -208,34 +216,60 @@ const foodInput    = document.getElementById('foodName');
 const foodDropdown = document.getElementById('foodDropdown');
 const tagsContainer= document.getElementById('foodTagsContainer');
 
-// Render all tags initially
+// Multi-select: track selected foods
+let selectedFoods = [];
+
 function renderAllTags() {
   tagsContainer.innerHTML = SOUTH_INDIAN_FOODS.map(f =>
-    `<button type="button" class="food-tag-btn" data-name="${f.name}" data-cat="${f.category}"
-       onclick="addFood('${f.name}','${f.category}')" title="${f.desc}">
+    `<button type="button" class="food-tag-btn ${selectedFoods.includes(f.name)?'added':''}"
+       data-name="${f.name}" data-cat="${f.category}"
+       onclick="toggleFood('${f.name}','${f.category}')" title="${f.desc}">
       ${f.emoji} ${f.name}
-      <span class="add-icon">+</span>
+      <span class="add-icon">${selectedFoods.includes(f.name)?'✓':'+'}</span>
     </button>`
   ).join('');
 }
 renderAllTags();
 
-function addFood(name, category) {
-  foodInput.value = name;
-  // Auto-set category
-  const catSelect = document.querySelector('select[name="category"]');
-  if (catSelect) catSelect.value = category;
-  // Mark button as added
-  document.querySelectorAll('.food-tag-btn').forEach(b => {
-    if (b.dataset.name === name) {
-      b.classList.add('added');
-      b.querySelector('.add-icon').textContent = '✓';
-    } else {
-      b.classList.remove('added');
-      b.querySelector('.add-icon').textContent = '+';
+function renderSelectedBar() {
+  let bar = document.getElementById('selectedFoodsBar');
+  if (!bar) return;
+  if (!selectedFoods.length) { bar.innerHTML=''; return; }
+  bar.innerHTML = selectedFoods.map(name =>
+    `<span class="sel-chip">${name}
+      <button type="button" onclick="removeFood('${name}')">×</button>
+    </span>`
+  ).join('');
+  // Update the input field with comma-separated names
+  foodInput.value = selectedFoods.join(', ');
+}
+
+function toggleFood(name, category) {
+  const idx = selectedFoods.indexOf(name);
+  if (idx === -1) {
+    selectedFoods.push(name);
+    // Set category from first selected
+    if (selectedFoods.length === 1) {
+      const catSelect = document.querySelector('select[name="category"]');
+      if (catSelect) catSelect.value = category;
     }
-  });
+  } else {
+    selectedFoods.splice(idx, 1);
+  }
+  renderAllTags();
+  renderSelectedBar();
   foodDropdown.style.display = 'none';
+}
+
+function removeFood(name) {
+  selectedFoods = selectedFoods.filter(n => n !== name);
+  renderAllTags();
+  renderSelectedBar();
+}
+
+// Keep addFood as alias for dropdown (single add)
+function addFood(name, category) {
+  toggleFood(name, category);
   foodInput.focus();
 }
 
