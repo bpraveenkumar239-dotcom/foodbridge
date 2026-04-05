@@ -47,11 +47,20 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use((req, res, next) => { res.locals.user = req.session.user || null; next(); });
 
-app.use('/',      require('./routes/auth'));
-app.use('/donor', require('./routes/donor'));
-app.use('/ngo',   require('./routes/ngo'));
-//app.use('/api',   require('./routes/api'));
-app.use('/admin', require('./routes/admin'));
+const authRoutes  = require('./routes/auth');
+const donorRoutes = require('./routes/donor');
+const ngoRoutes   = require('./routes/ngo');
+const adminRoutes = require('./routes/admin');
+
+console.log('auth:',  typeof authRoutes);
+console.log('donor:', typeof donorRoutes);
+console.log('ngo:',   typeof ngoRoutes);
+console.log('admin:', typeof adminRoutes);
+
+app.use('/', authRoutes);
+app.use('/donor', donorRoutes);
+app.use('/ngo', ngoRoutes);
+app.use('/admin', adminRoutes);
 
 app.get('/', (req, res) => {
   const u = req.session.user;
