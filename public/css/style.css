@@ -846,3 +846,167 @@ a { -webkit-tap-highlight-color: transparent; }
   body { background: var(--green-dark); }
 }
 
+
+/* ══════════════════════════════════════════════════════════════════
+   MOBILE CRITICAL FIXES — Full page visibility
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Prevent horizontal overflow on ALL pages */
+html, body { overflow-x: hidden; width: 100%; }
+
+/* Container should never exceed viewport */
+.container, .container-fluid {
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+  max-width: 100% !important;
+}
+
+/* Navbar: prevent overflow, hamburger works on all sizes */
+.navbar-custom .container-fluid { padding-left: 14px !important; padding-right: 14px !important; }
+.navbar-collapse { max-height: 75vh; overflow-y: auto; }
+.navbar-nav { padding: 8px 0; }
+.navbar-nav .nav-item + .nav-item { border-top: 1px solid rgba(255,255,255,.08); }
+.nav-user-badge { font-size: .75rem; max-width: 100%; white-space: normal; word-break: break-word; margin: 6px 12px; }
+
+/* All pages: remove excessive top/bottom padding on mobile */
+@media (max-width: 767px) {
+  .container { padding-left: 12px !important; padding-right: 12px !important; }
+  .py-5 { padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; }
+  .py-4 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+  .mb-4 { margin-bottom: 1rem !important; }
+  .mb-5 { margin-bottom: 1.5rem !important; }
+
+  /* Row cols: stack everything on mobile */
+  .row { margin-left: -8px !important; margin-right: -8px !important; }
+  .row > * { padding-left: 8px !important; padding-right: 8px !important; }
+
+  /* Cards must not overflow */
+  .form-card, .admin-card, .request-card, .donation-item,
+  .donation-summary-card, .map-card, .auth-card {
+    overflow: hidden;
+    word-break: break-word;
+  }
+
+  /* Tables scroll horizontally */
+  .table-responsive, .admin-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+
+  /* Grid: always single column on mobile */
+  .requests-grid,
+  [style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Needy location grid: 1 column on mobile */
+  #needyGrid { grid-template-columns: 1fr !important; }
+
+  /* Location tabs: horizontal scroll */
+  .location-tabs { overflow-x: auto; white-space: nowrap; display: flex; flex-wrap: nowrap; }
+  .loc-tab { flex: 0 0 auto; min-width: 90px; }
+
+  /* Buttons: full width in forms */
+  .btn-submit, .btn-auth { width: 100%; }
+
+  /* Images stay within bounds */
+  img, svg { max-width: 100%; height: auto; }
+
+  /* Leaflet maps: bounded height */
+  .leaflet-container { max-height: 60vh; }
+  #needyMap, #delivMap, #pickupMap { max-height: 55vw; min-height: 200px; }
+
+  /* Stat grids: 2 columns on mobile */
+  .stat-grid { grid-template-columns: 1fr 1fr !important; }
+
+  /* Nav wrap (navigate page) */
+  .nav-wrap { padding: 12px 0 24px !important; }
+
+  /* Donation right side: full row */
+  .donation-item { flex-wrap: wrap; }
+  .donation-item-left  { flex: 1 1 100%; }
+  .donation-item-right { flex: 1 1 100%; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 8px; }
+
+  /* Hero: tight on mobile */
+  .page-hero { padding: 24px 14px; }
+
+  /* Needy cards: readable */
+  .needy-card { padding: 12px; }
+
+  /* Modals: full width */
+  .modal-dialog { margin: 12px; max-width: calc(100vw - 24px); }
+  .modal-content { border-radius: 14px; }
+}
+
+/* ── Needy Location Cards ──────────────────────────────────────── */
+.needy-card {
+  background: #fff;
+  border: 2px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all .2s;
+  position: relative;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.needy-card:hover,
+.needy-card:active { border-color: #22c55e; box-shadow: 0 4px 16px rgba(34,197,94,.2); background: #f0fdf4; }
+.needy-card.selected { border-color: #1a4a2e; background: #f0fdf4; box-shadow: 0 4px 20px rgba(26,74,46,.2); }
+.needy-card .sel-badge {
+  display: none;
+  position: absolute; top: 10px; right: 10px;
+  background: #1a4a2e; color: #fff;
+  font-size: .62rem; font-weight: 700;
+  padding: 3px 9px; border-radius: 10px;
+}
+.needy-card.selected .sel-badge { display: block; }
+
+/* Needy panel header */
+.needy-panel-header {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap; gap: 10px;
+  margin-bottom: 14px;
+}
+.needy-panel-title {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700; font-size: 1rem;
+  color: #1a4a2e; margin: 0;
+  display: flex; align-items: center; gap: 8px;
+}
+.needy-count-badge {
+  background: #e8f5ee; color: #1a4a2e;
+  font-size: .7rem; padding: 2px 10px;
+  border-radius: 12px; font-weight: 700;
+}
+.needy-map-btn {
+  background: #f3f4f6; border: 2px solid #e5e7eb;
+  border-radius: 10px; padding: 8px 16px;
+  font-size: .82rem; font-weight: 600;
+  cursor: pointer; font-family: 'DM Sans', sans-serif;
+  transition: all .2s; white-space: nowrap;
+  min-height: 40px;
+}
+.needy-map-btn:hover { background: #e5e7eb; }
+
+.needy-divider {
+  display: flex; align-items: center; gap: 12px; margin: 20px 0;
+}
+.needy-divider-line { flex: 1; height: 1px; background: #e5e7eb; }
+.needy-divider-text { font-size: .78rem; color: #9ca3af; font-weight: 600; white-space: nowrap; }
+
+/* Selected address display */
+.selected-location-bar {
+  background: #f0fdf4;
+  border: 2px solid #22c55e;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: .88rem;
+  color: #1a4a2e;
+  font-weight: 600;
+  display: none;
+}
+.selected-location-bar.show { display: flex; }
+

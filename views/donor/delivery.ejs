@@ -1,94 +1,110 @@
-<%- include('../partials/header', {title: 'Delivery Location – FoodBridge'}) %>
+<%- include('../partials/header', {title: 'Set Delivery – FoodBridge'}) %>
 <%- include('../partials/navbar') %>
 
 <div class="page-section">
-  <div class="container py-5">
-    <div class="section-header">
-      <div class="success-badge-top"><i class="bi bi-check-circle-fill text-success me-2"></i>Donation Submitted!</div>
-      <h2 class="section-title">Set Delivery Location</h2>
-      <p class="section-subtitle">Where should this food be delivered? You can pick from admin-suggested needy locations or enter your own.</p>
-    </div>
+  <div class="container" style="padding-top:20px;padding-bottom:40px;">
+
+    <div class="success-badge-top mb-1"><i class="bi bi-check-circle-fill text-success me-2"></i>Donation Submitted!</div>
+    <h2 class="section-title">Where to Deliver?</h2>
+    <p class="section-subtitle mb-4">Pick a needy location suggested by admin, or enter your own address.</p>
 
     <!-- Donation summary -->
     <div class="donation-summary-card mb-4">
-      <div class="row align-items-center">
-        <div class="col-auto"><span style="font-size:2rem;">🍱</span></div>
-        <div class="col">
-          <h5 class="mb-1"><%= food.name %></h5>
-          <p class="mb-0 text-muted small"><i class="bi bi-geo-alt me-1"></i><%= food.pickupLocation %></p>
+      <div class="d-flex align-items-center gap-3">
+        <span style="font-size:2rem;flex-shrink:0;">🍱</span>
+        <div style="min-width:0;">
+          <h5 class="mb-0" style="font-size:1rem;"><%= food.name %></h5>
+          <div class="text-muted" style="font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><i class="bi bi-geo-alt me-1"></i><%= food.pickupLocation %></div>
         </div>
-        <div class="col-auto"><span class="status-badge status-pending">Pending</span></div>
+        <span class="status-badge status-pending ms-auto">Pending</span>
       </div>
     </div>
 
-    <!-- Needy Locations Panel -->
-    <div id="needyPanel" class="mb-4">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-        <h5 style="font-family:'DM Sans',sans-serif;font-weight:700;margin:0;color:#1a4a2e;">
-          <i class="bi bi-heart-fill text-danger me-2"></i>Suggested Needy Locations
-          <span id="needyCount" style="background:#e8f5ee;color:#1a4a2e;font-size:.72rem;padding:2px 10px;border-radius:12px;margin-left:8px;font-weight:700;"></span>
-        </h5>
-        <button type="button" id="toggleNeedyMap" onclick="toggleNeedyMap()" style="background:#f3f4f6;border:2px solid #e5e7eb;border-radius:10px;padding:7px 16px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">
-          <i class="bi bi-map me-1"></i>Show on Map
-        </button>
-      </div>
+    <!-- ═══════ NEEDY LOCATIONS PANEL ═══════ -->
+    <div class="needy-panel-header">
+      <h5 class="needy-panel-title">
+        <i class="bi bi-heart-fill text-danger"></i>
+        Admin Suggested Locations
+        <span class="needy-count-badge" id="needyCount" style="display:none;"></span>
+      </h5>
+      <button type="button" class="needy-map-btn" id="mapToggleBtn" onclick="toggleNeedyMap()" style="display:none;">
+        <i class="bi bi-map me-1"></i><span id="mapBtnText">Map View</span>
+      </button>
+    </div>
 
-      <!-- Loading state -->
-      <div id="needyLoading" style="text-align:center;padding:24px;color:#9ca3af;">
-        <div class="spinner-border spinner-border-sm text-success me-2"></div>Loading needy locations…
-      </div>
+    <!-- Loading -->
+    <div id="needyLoading" class="text-center py-3" style="color:#9ca3af;">
+      <div class="spinner-border spinner-border-sm text-success me-2"></div>Loading locations…
+    </div>
 
-      <!-- Needy location cards grid -->
-      <div id="needyGrid" style="display:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:16px;"></div>
+    <!-- No locations -->
+    <div id="needyEmpty" style="display:none;" class="text-center py-3" >
+      <p style="color:#9ca3af;font-size:.88rem;">No needy locations added by admin yet. Use the form below.</p>
+    </div>
 
-      <!-- Needy map -->
-      <div id="needyMapContainer" style="display:none;margin-bottom:16px;">
-        <div id="needyMap" style="height:320px;border-radius:14px;overflow:hidden;border:2px solid #e5e7eb;"></div>
-        <p style="font-size:.78rem;color:#6b7280;margin-top:6px;"><i class="bi bi-cursor me-1"></i>Click a pin on the map to select that needy location</p>
+    <!-- Selected bar -->
+    <div class="selected-location-bar" id="selectedBar">
+      <i class="bi bi-check-circle-fill text-success fs-5 flex-shrink-0"></i>
+      <div style="min-width:0;flex:1;">
+        <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;color:#065f46;margin-bottom:2px;">Selected Delivery Location</div>
+        <div id="selectedBarText" style="font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
       </div>
+      <button type="button" onclick="clearNeedy()" style="background:none;border:none;color:#991b1b;font-size:1.1rem;cursor:pointer;flex-shrink:0;padding:4px;">
+        <i class="bi bi-x-circle"></i>
+      </button>
+    </div>
+
+    <!-- Cards grid -->
+    <div id="needyGrid" style="display:none;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:16px;"></div>
+
+    <!-- Map -->
+    <div id="needyMapWrap" style="display:none;margin-bottom:16px;">
+      <div id="needyMap" style="height:280px;border-radius:14px;border:2px solid #e5e7eb;"></div>
+      <p style="font-size:.75rem;color:#6b7280;margin-top:6px;text-align:center;"><i class="bi bi-cursor me-1"></i>Tap a pin to select that location</p>
     </div>
 
     <!-- Divider -->
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
-      <span style="font-size:.82rem;color:#9ca3af;font-weight:600;">OR ENTER YOUR OWN</span>
-      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+    <div class="needy-divider">
+      <div class="needy-divider-line"></div>
+      <span class="needy-divider-text">OR ENTER YOUR OWN</span>
+      <div class="needy-divider-line"></div>
     </div>
 
-    <!-- Manual delivery form -->
+    <!-- ═══════ MANUAL FORM ═══════ -->
     <div class="form-card">
       <form action="/donor/delivery/<%= food._id %>" method="POST" id="deliveryForm">
-        <div class="col-12">
-          <label class="form-label fw-bold">Delivery Address</label>
-          <div class="location-selector">
-            <div class="location-tabs">
-              <button type="button" class="loc-tab active" data-method="manual"><i class="bi bi-keyboard"></i> Type Manually</button>
-              <button type="button" class="loc-tab" data-method="live"><i class="bi bi-geo-alt-fill"></i> My Location</button>
-              <button type="button" class="loc-tab" data-method="map"><i class="bi bi-map"></i> Pick on Map</button>
-            </div>
-            <div class="location-input-area mt-2">
-              <input type="text" class="form-control fc-custom" name="deliveryLocation" id="delivLocText"
-                placeholder="Enter delivery address…"/>
-              <input type="hidden" name="deliveryLatitude"  id="delivLat"/>
-              <input type="hidden" name="deliveryLongitude" id="delivLng"/>
+        <input type="hidden" name="deliveryLocation"  id="finalLocation" />
+        <input type="hidden" name="deliveryLatitude"  id="finalLat" />
+        <input type="hidden" name="deliveryLongitude" id="finalLng" />
 
-              <div id="liveStatus" class="location-status mt-2" style="display:none;">
-                <div class="spinner-border spinner-border-sm text-success me-2"></div>Detecting location…
-              </div>
-              <div id="delivMapContainer" class="mt-3" style="display:none;">
-                <div id="delivMap" style="height:300px;border-radius:12px;"></div>
-                <p class="map-hint"><i class="bi bi-cursor me-1"></i>Click to set delivery location</p>
-              </div>
+        <label class="form-label">Delivery Address</label>
+        <div class="location-selector">
+          <div class="location-tabs">
+            <button type="button" class="loc-tab active" data-method="manual"><i class="bi bi-keyboard me-1"></i>Type</button>
+            <button type="button" class="loc-tab" data-method="live"><i class="bi bi-geo-alt-fill me-1"></i>GPS</button>
+            <button type="button" class="loc-tab" data-method="map"><i class="bi bi-map me-1"></i>Map</button>
+          </div>
+          <div class="location-input-area">
+            <input type="text" class="fc-custom" id="delivLocText" placeholder="Enter delivery address…"
+              oninput="onManualType()" style="width:100%;"/>
+
+            <div id="liveStatus" class="location-status mt-2" style="display:none;">
+              <div class="spinner-border spinner-border-sm text-success me-2"></div>Detecting…
+            </div>
+            <div id="delivMapWrap" style="display:none;margin-top:10px;">
+              <div id="delivMap" style="height:260px;border-radius:12px;"></div>
+              <p class="map-hint"><i class="bi bi-cursor me-1"></i>Tap to pick delivery point</p>
             </div>
           </div>
         </div>
 
-        <div class="form-actions mt-4">
-          <button type="submit" class="btn btn-primary btn-lg btn-submit">
+        <div class="d-flex flex-column gap-2 mt-4">
+          <button type="submit" class="btn btn-primary btn-submit" id="saveBtn" disabled
+            style="opacity:.5;cursor:not-allowed;">
             <i class="bi bi-check2-circle me-2"></i>Save Delivery Location
           </button>
-          <a href="/donor/skip-delivery/<%= food._id %>" class="btn btn-ghost ms-3">
-            <i class="bi bi-skip-forward me-1"></i>Skip for now
+          <a href="/donor/skip-delivery/<%= food._id %>" class="btn btn-ghost text-center">
+            <i class="bi bi-skip-forward me-1"></i>Skip — let NGO decide
           </a>
         </div>
       </form>
@@ -96,161 +112,200 @@
   </div>
 </div>
 
-<style>
-.needy-card {
-  background:#fff;border:2px solid #e5e7eb;border-radius:12px;padding:14px 16px;
-  cursor:pointer;transition:all .2s;position:relative;
-}
-.needy-card:hover { border-color:#22c55e;box-shadow:0 4px 16px rgba(34,197,94,.15); }
-.needy-card.selected { border-color:#1a4a2e;background:#f0fdf4;box-shadow:0 4px 16px rgba(26,74,46,.2); }
-.needy-card .selected-badge {
-  display:none;position:absolute;top:10px;right:10px;
-  background:#1a4a2e;color:#fff;font-size:.65rem;font-weight:700;
-  padding:2px 8px;border-radius:10px;
-}
-.needy-card.selected .selected-badge { display:block; }
-.needy-cat-badge { font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:8px;display:inline-block;margin-bottom:6px; }
-</style>
-
 <script>
-const catColors = { orphanage:'#dbeafe', shelter:'#dcfce7', oldage:'#fef3c7', school:'#ede9fe', hospital:'#fee2e2', community:'#e0f2fe', station:'#fdf4ff', other:'#f3f4f6' };
-const catText   = { orphanage:'#1e40af', shelter:'#065f46', oldage:'#92400e', school:'#5b21b6', hospital:'#991b1b', community:'#0369a1', station:'#7e22ce', other:'#374151' };
-const catEmojis = { orphanage:'🏠', shelter:'🏕️', oldage:'👴', school:'🏫', hospital:'🏥', community:'🤝', station:'🚉', other:'📍' };
-const catPinColors = { orphanage:'#3b82f6', shelter:'#22c55e', oldage:'#f59e0b', school:'#8b5cf6', hospital:'#ef4444', community:'#06b6d4', station:'#a855f7', other:'#6b7280' };
+const FOOD_ID = '<%- food._id %>';
+let allLocs = [], selLocId = null;
+let needyMapObj = null, needyMapInited = false;
+let delivMapObj = null, delivMarker = null;
 
-let allNeedyLocs = [], needyMap = null, selectedLocId = null;
+const catEmojis = {orphanage:'🏠',shelter:'🏕️',oldage:'👴',school:'🏫',hospital:'🏥',community:'🤝',station:'🚉',other:'📍'};
+const catColors  = {orphanage:'#dbeafe',shelter:'#dcfce7',oldage:'#fef3c7',school:'#ede9fe',hospital:'#fee2e2',community:'#e0f2fe',station:'#fdf4ff',other:'#f3f4f6'};
+const catText    = {orphanage:'#1e40af',shelter:'#065f46',oldage:'#92400e',school:'#5b21b6',hospital:'#991b1b',community:'#0369a1',station:'#7e22ce',other:'#374151'};
+const pinColor   = {orphanage:'#3b82f6',shelter:'#22c55e',oldage:'#f59e0b',school:'#8b5cf6',hospital:'#ef4444',community:'#06b6d4',station:'#a855f7',other:'#6b7280'};
 
-// Load needy locations
+// ── Fetch needy locations ────────────────────────────────────────
 fetch('/api/needy-locations')
   .then(r => r.json())
   .then(data => {
     document.getElementById('needyLoading').style.display = 'none';
-    if (!data.success || !data.locations.length) {
-      document.getElementById('needyPanel').innerHTML += '<p style="color:#9ca3af;font-size:.85rem;text-align:center;padding:12px;">No needy locations added by admin yet.</p>';
+    if (!data.success || !data.locations || !data.locations.length) {
+      document.getElementById('needyEmpty').style.display = 'block';
       return;
     }
-    allNeedyLocs = data.locations;
-    document.getElementById('needyCount').textContent = data.locations.length + ' locations';
-    renderNeedyCards(data.locations);
+    allLocs = data.locations;
+    document.getElementById('needyCount').textContent = data.locations.length + ' places';
+    document.getElementById('needyCount').style.display = 'inline';
+    document.getElementById('mapToggleBtn').style.display = 'inline-flex';
+    renderCards();
+    document.getElementById('needyGrid').style.display = 'grid';
   })
-  .catch(() => { document.getElementById('needyLoading').style.display = 'none'; });
+  .catch(() => { document.getElementById('needyLoading').style.display = 'none'; document.getElementById('needyEmpty').style.display = 'block'; });
 
-function renderNeedyCards(locs) {
-  const grid = document.getElementById('needyGrid');
-  grid.style.display = 'grid';
-  grid.innerHTML = locs.map(loc => `
-    <div class="needy-card" id="nc_${loc._id}" onclick="selectNeedyLocation('${loc._id}')">
-      <span class="selected-badge">✓ Selected</span>
-      <div class="needy-cat-badge" style="background:${catColors[loc.category]||'#f3f4f6'};color:${catText[loc.category]||'#374151'};">
-        ${catEmojis[loc.category]||'📍'} ${loc.category.replace('_',' ')}
-      </div>
-      <div style="font-weight:700;font-size:.92rem;color:#1a4a2e;margin-bottom:4px;">${loc.name}</div>
-      <div style="font-size:.78rem;color:#6b7280;margin-bottom:${loc.description?'6px':'0'};">${loc.address}</div>
-      ${loc.description ? `<div style="font-size:.75rem;color:#9ca3af;">${loc.description}</div>` : ''}
-      ${loc.contactPhone ? `<div style="font-size:.75rem;color:#1a4a2e;margin-top:4px;"><i class="bi bi-telephone me-1"></i>${loc.contactPhone}</div>` : ''}
-      ${loc.latitude ? `<div style="font-size:.72rem;color:#22c55e;margin-top:4px;"><i class="bi bi-crosshair me-1"></i>GPS available</div>` : ''}
-    </div>
-  `).join('');
+// ── Render cards ─────────────────────────────────────────────────
+function renderCards() {
+  const g = document.getElementById('needyGrid');
+  g.innerHTML = allLocs.map(loc => `
+    <div class="needy-card" id="nc_${loc._id}" onclick="selectNeedy('${loc._id}')">
+      <span class="sel-badge">✓ Selected</span>
+      <span style="background:${catColors[loc.category]||'#f3f4f6'};color:${catText[loc.category]||'#374151'};font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:8px;display:inline-block;margin-bottom:6px;">
+        ${catEmojis[loc.category]||'📍'} ${(loc.category||'other').replace('_',' ')}
+      </span>
+      <div style="font-weight:700;font-size:.92rem;color:#1a4a2e;margin-bottom:3px;">${loc.name}</div>
+      <div style="font-size:.78rem;color:#6b7280;margin-bottom:${loc.description?'4px':'0'};">${loc.address}</div>
+      ${loc.description ? `<div style="font-size:.72rem;color:#9ca3af;">${loc.description}</div>` : ''}
+      ${loc.contactPhone ? `<div style="font-size:.72rem;color:#1a4a2e;margin-top:4px;"><i class="bi bi-telephone me-1"></i>${loc.contactPhone}</div>` : ''}
+      ${loc.latitude ? `<div style="font-size:.68rem;color:#22c55e;margin-top:4px;"><i class="bi bi-crosshair me-1"></i>GPS available</div>` : ''}
+    </div>`).join('');
 }
 
-function selectNeedyLocation(id) {
-  const loc = allNeedyLocs.find(l => l._id === id);
+// ── Select a needy location ──────────────────────────────────────
+function selectNeedy(id) {
+  const loc = allLocs.find(l => l._id === id);
   if (!loc) return;
-  selectedLocId = id;
+  selLocId = id;
 
-  // Update form fields
-  document.getElementById('delivLocText').value = loc.name + ', ' + loc.address;
-  document.getElementById('delivLat').value = loc.latitude  || '';
-  document.getElementById('delivLng').value = loc.longitude || '';
+  const address = loc.name + ', ' + loc.address;
+  document.getElementById('finalLocation').value = address;
+  document.getElementById('finalLat').value = loc.latitude  || '';
+  document.getElementById('finalLng').value = loc.longitude || '';
+  document.getElementById('delivLocText').value = '';
 
-  // Highlight selected card
   document.querySelectorAll('.needy-card').forEach(c => c.classList.remove('selected'));
   document.getElementById('nc_' + id).classList.add('selected');
 
-  // Scroll to form
-  document.getElementById('delivLocText').scrollIntoView({ behavior:'smooth', block:'center' });
-  document.getElementById('delivLocText').style.borderColor = '#22c55e';
-  setTimeout(() => document.getElementById('delivLocText').style.borderColor = '', 2000);
+  const bar = document.getElementById('selectedBar');
+  document.getElementById('selectedBarText').textContent = address;
+  bar.classList.add('show');
+
+  enableSave();
+  // Scroll to save button
+  document.getElementById('saveBtn').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-// Toggle needy map
-let needyMapInitialized = false;
+function clearNeedy() {
+  selLocId = null;
+  document.getElementById('finalLocation').value = '';
+  document.getElementById('finalLat').value = '';
+  document.getElementById('finalLng').value = '';
+  document.querySelectorAll('.needy-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('selectedBar').classList.remove('show');
+  checkSave();
+}
+
+// ── Toggle needy map ─────────────────────────────────────────────
 function toggleNeedyMap() {
-  const container = document.getElementById('needyMapContainer');
-  const btn = document.getElementById('toggleNeedyMap');
-  const isVisible = container.style.display !== 'none';
-  container.style.display = isVisible ? 'none' : 'block';
-  btn.innerHTML = isVisible ? '<i class="bi bi-map me-1"></i>Show on Map' : '<i class="bi bi-x me-1"></i>Hide Map';
+  const wrap = document.getElementById('needyMapWrap');
+  const btn  = document.getElementById('mapBtnText');
+  const open = wrap.style.display === 'block';
+  wrap.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? 'Map View' : 'List View';
 
-  if (!isVisible && !needyMapInitialized) {
-    needyMapInitialized = true;
-    needyMap = L.map('needyMap').setView([12.9716, 77.5946], 5);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap' }).addTo(needyMap);
-
+  if (!open && !needyMapInited) {
+    needyMapInited = true;
+    needyMapObj = L.map('needyMap').setView([12.9716, 77.5946], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap' }).addTo(needyMapObj);
     const pts = [];
-    allNeedyLocs.forEach(loc => {
+    allLocs.forEach(loc => {
       if (!loc.latitude || !loc.longitude) return;
-      const color = catPinColors[loc.category] || '#6b7280';
-      const icon  = L.divIcon({ className:'', iconSize:[34,34], iconAnchor:[17,17],
-        html:`<div style="background:${color};width:34px;height:34px;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:15px;">${catEmojis[loc.category]||'📍'}</div>` });
-      L.marker([loc.latitude, loc.longitude], { icon })
-        .addTo(needyMap)
-        .bindPopup(`<b>${loc.name}</b><br><small>${loc.address}</small><br><a href="#" onclick="selectNeedyLocation('${loc._id}');return false;" style="color:#1a4a2e;font-weight:700;">✓ Select this location</a>`)
-        .on('click', () => selectNeedyLocation(loc._id));
+      const icon = L.divIcon({ className:'', iconSize:[34,34], iconAnchor:[17,17],
+        html:`<div style="background:${pinColor[loc.category]||'#6b7280'};width:34px;height:34px;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:14px;">${catEmojis[loc.category]||'📍'}</div>` });
+      L.marker([loc.latitude, loc.longitude], { icon }).addTo(needyMapObj)
+        .bindPopup(`<b>${loc.name}</b><br><small>${loc.address}</small><br><button onclick="selectNeedy('${loc._id}')" style="margin-top:6px;background:#1a4a2e;color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:.8rem;cursor:pointer;">✓ Select</button>`);
       pts.push([loc.latitude, loc.longitude]);
     });
-
-    if (pts.length === 1) needyMap.setView(pts[0], 14);
-    else if (pts.length > 1) needyMap.fitBounds(L.latLngBounds(pts), { padding:[30,30] });
-    setTimeout(() => needyMap.invalidateSize(), 200);
-  } else if (!isVisible) {
-    setTimeout(() => needyMap.invalidateSize(), 100);
+    if (pts.length === 1) needyMapObj.setView(pts[0], 14);
+    else if (pts.length > 1) needyMapObj.fitBounds(L.latLngBounds(pts), { padding:[30,30] });
+    setTimeout(() => needyMapObj.invalidateSize(), 200);
+  } else if (!open) {
+    setTimeout(() => needyMapObj.invalidateSize(), 100);
   }
 }
 
-// Manual location picker
-let delivMapLeaflet = null, delivMarker = null;
+// ── Manual text typed ────────────────────────────────────────────
+function onManualType() {
+  selLocId = null;
+  document.querySelectorAll('.needy-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('selectedBar').classList.remove('show');
+  const val = document.getElementById('delivLocText').value.trim();
+  document.getElementById('finalLocation').value = val;
+  document.getElementById('finalLat').value = '';
+  document.getElementById('finalLng').value = '';
+  checkSave();
+}
+
+// ── Enable/disable save button ───────────────────────────────────
+function checkSave() {
+  const hasVal = document.getElementById('finalLocation').value.trim().length > 0;
+  enableSave(hasVal);
+}
+function enableSave(enable = true) {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = !enable;
+  btn.style.opacity  = enable ? '1' : '.5';
+  btn.style.cursor   = enable ? 'pointer' : 'not-allowed';
+}
+
+// ── Form submit: sync text input to hidden fields ────────────────
+document.getElementById('deliveryForm').addEventListener('submit', function(e) {
+  const manual = document.getElementById('delivLocText').value.trim();
+  if (!selLocId && manual) {
+    document.getElementById('finalLocation').value = manual;
+  }
+  if (!document.getElementById('finalLocation').value.trim()) {
+    e.preventDefault();
+    alert('Please select or enter a delivery location.');
+  }
+});
+
+// ── Location picker tabs ─────────────────────────────────────────
 document.querySelectorAll('.loc-tab').forEach(tab => {
   tab.addEventListener('click', function() {
     document.querySelectorAll('.loc-tab').forEach(t => t.classList.remove('active'));
     this.classList.add('active');
-    const method = this.dataset.method;
-    document.getElementById('liveStatus').style.display    = 'none';
-    document.getElementById('delivMapContainer').style.display = 'none';
+    const m = this.dataset.method;
+    document.getElementById('liveStatus').style.display = 'none';
+    document.getElementById('delivMapWrap').style.display = 'none';
 
-    if (method === 'live') {
+    if (m === 'live') {
       document.getElementById('liveStatus').style.display = 'flex';
       navigator.geolocation.getCurrentPosition(pos => {
         const lat = pos.coords.latitude, lng = pos.coords.longitude;
-        document.getElementById('delivLat').value = lat;
-        document.getElementById('delivLng').value = lng;
-        reverseGeocode(lat, lng, 'delivLocText');
+        document.getElementById('finalLat').value = lat;
+        document.getElementById('finalLng').value = lng;
         document.getElementById('liveStatus').style.display = 'none';
-        document.querySelectorAll('.needy-card').forEach(c => c.classList.remove('selected'));
-      }, () => { document.getElementById('liveStatus').innerHTML='<i class="bi bi-x-circle text-danger me-2"></i>Location denied.'; });
-    } else if (method === 'map') {
-      document.getElementById('delivMapContainer').style.display = 'block';
-      if (!delivMapLeaflet) {
-        delivMapLeaflet = L.map('delivMap').setView([12.9716,77.5946],10);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(delivMapLeaflet);
-        delivMapLeaflet.on('click', e => {
-          if (delivMarker) delivMapLeaflet.removeLayer(delivMarker);
-          delivMarker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(delivMapLeaflet);
-          document.getElementById('delivLat').value = e.latlng.lat;
-          document.getElementById('delivLng').value = e.latlng.lng;
-          reverseGeocode(e.latlng.lat, e.latlng.lng, 'delivLocText');
-          document.querySelectorAll('.needy-card').forEach(c => c.classList.remove('selected'));
+        reverseGeocode(lat, lng, v => {
+          document.getElementById('delivLocText').value = v;
+          document.getElementById('finalLocation').value = v;
+          clearNeedy();
+          enableSave(true);
         });
-      } else { setTimeout(() => delivMapLeaflet.invalidateSize(), 100); }
+      }, () => { document.getElementById('liveStatus').innerHTML = '<i class="bi bi-x-circle text-danger me-2"></i>Location denied.'; });
+    } else if (m === 'map') {
+      document.getElementById('delivMapWrap').style.display = 'block';
+      if (!delivMapObj) {
+        delivMapObj = L.map('delivMap').setView([12.9716, 77.5946], 10);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap' }).addTo(delivMapObj);
+        delivMapObj.on('click', e => {
+          if (delivMarker) delivMapObj.removeLayer(delivMarker);
+          delivMarker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(delivMapObj);
+          document.getElementById('finalLat').value = e.latlng.lat;
+          document.getElementById('finalLng').value = e.latlng.lng;
+          reverseGeocode(e.latlng.lat, e.latlng.lng, v => {
+            document.getElementById('delivLocText').value = v;
+            document.getElementById('finalLocation').value = v;
+            clearNeedy();
+            enableSave(true);
+          });
+        });
+      } else { setTimeout(() => delivMapObj.invalidateSize(), 100); }
     }
   });
 });
 
-function reverseGeocode(lat, lng, id) {
+function reverseGeocode(lat, lng, cb) {
   fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-    .then(r => r.json())
-    .then(d => { document.getElementById(id).value = d.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`; })
-    .catch(() => { document.getElementById(id).value = `${lat.toFixed(4)}, ${lng.toFixed(4)}`; });
+    .then(r => r.json()).then(d => cb(d.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`))
+    .catch(() => cb(`${lat.toFixed(4)}, ${lng.toFixed(4)}`));
 }
 </script>
 
