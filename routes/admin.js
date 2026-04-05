@@ -419,3 +419,4 @@ router.post('/needy-locations/:id/delete', requireAdmin, async (req, res) => {
     res.redirect('/admin/needy-locations');
   } catch (err) { res.redirect('/admin/needy-locations'); }
 });
+module.exports = router;
