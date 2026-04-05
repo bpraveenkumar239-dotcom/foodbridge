@@ -1,8 +1,9 @@
-const express = require('express');
-const router  = express.Router();
-const User    = require('../models/User');
-const Food    = require('../models/Food');
-const bcrypt  = require('bcryptjs');
+const express        = require('express');
+const router         = express.Router();
+const User           = require('../models/User');
+const Food           = require('../models/Food');
+const NeedyLocation  = require('../models/NeedyLocation');
+const bcrypt         = require('bcryptjs');
 const { requireAdmin } = require('../middleware/auth');
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -270,7 +271,7 @@ router.post('/settings/create-admin', requireAdmin, async (req, res) => {
   } catch (err) { res.redirect('/admin/settings?err=Failed+to+create+admin'); }
 });
 
-module.exports = router;
+
 
 // ══════════════════════════════════════════════════════════════════════════════
 // CSV EXPORT
@@ -309,4 +310,112 @@ router.get('/export/users', requireAdmin, async (req, res) => {
     res.setHeader('Content-Disposition','attachment; filename="users.csv"');
     res.send(csv);
   } catch (err) { res.redirect('/admin/users'); }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// NEEDY LOCATIONS  –  admin manages, donors/NGOs can browse
+// ══════════════════════════════════════════════════════════════════════════════
+
+// List all needy locations
+router.get('/needy-locations', requireAdmin, async (req, res) => {
+  try {
+    const { search, category } = req.query;
+    const filter = {};
+    if (category && category !== 'all') filter.category = category;
+    if (search) filter.$or = [
+      { name:    { $regex: search, $options: 'i' } },
+      { address: { $regex: search, $options: 'i' } }
+    ];
+    const locations = await NeedyLocation.find(filter).sort({ createdAt: -1 });
+    res.render('admin/needy-locations', {
+      user: req.session.user, locations, query: req.query,
+      pageTitle: 'Needy Locations', currentPage: 'needy'
+    });
+  } catch (err) {
+    res.render('admin/needy-locations', {
+      user: req.session.user, locations: [], query: {},
+      pageTitle: 'Needy Locations', currentPage: 'needy'
+    });
+  }
+});
+
+// Add needy location page
+router.get('/needy-locations/add', requireAdmin, (req, res) => {
+  res.render('admin/needy-location-form', {
+    user: req.session.user, location: null, error: null,
+    pageTitle: 'Add Needy Location', currentPage: 'needy'
+  });
+});
+
+// Submit new needy location
+router.post('/needy-locations/add', requireAdmin, async (req, res) => {
+  try {
+    const { name, address, latitude, longitude, category, description, contactName, contactPhone } = req.body;
+    if (!name || !address) {
+      return res.render('admin/needy-location-form', {
+        user: req.session.user, location: req.body, error: 'Name and address are required.',
+        pageTitle: 'Add Needy Location', currentPage: 'needy'
+      });
+    }
+    await NeedyLocation.create({
+      name, address,
+      latitude:  parseFloat(latitude)  || null,
+      longitude: parseFloat(longitude) || null,
+      category:  category || 'other',
+      description, contactName, contactPhone,
+      addedBy: req.session.user.email
+    });
+    res.redirect('/admin/needy-locations?msg=Location+added+successfully');
+  } catch (err) {
+    res.render('admin/needy-location-form', {
+      user: req.session.user, location: req.body, error: 'Failed to add location.',
+      pageTitle: 'Add Needy Location', currentPage: 'needy'
+    });
+  }
+});
+
+// Edit needy location page
+router.get('/needy-locations/:id/edit', requireAdmin, async (req, res) => {
+  try {
+    const location = await NeedyLocation.findById(req.params.id);
+    if (!location) return res.redirect('/admin/needy-locations');
+    res.render('admin/needy-location-form', {
+      user: req.session.user, location, error: null,
+      pageTitle: 'Edit Needy Location', currentPage: 'needy'
+    });
+  } catch (err) { res.redirect('/admin/needy-locations'); }
+});
+
+// Update needy location
+router.post('/needy-locations/:id/edit', requireAdmin, async (req, res) => {
+  try {
+    const { name, address, latitude, longitude, category, description, contactName, contactPhone, isActive } = req.body;
+    await NeedyLocation.findByIdAndUpdate(req.params.id, {
+      name, address,
+      latitude:  parseFloat(latitude)  || null,
+      longitude: parseFloat(longitude) || null,
+      category:  category || 'other',
+      description, contactName, contactPhone,
+      isActive: isActive === 'on',
+      updatedAt: new Date()
+    });
+    res.redirect('/admin/needy-locations?msg=Location+updated');
+  } catch (err) { res.redirect('/admin/needy-locations'); }
+});
+
+// Toggle active/inactive
+router.post('/needy-locations/:id/toggle', requireAdmin, async (req, res) => {
+  try {
+    const loc = await NeedyLocation.findById(req.params.id);
+    await NeedyLocation.findByIdAndUpdate(req.params.id, { isActive: !loc.isActive });
+    res.redirect('/admin/needy-locations');
+  } catch (err) { res.redirect('/admin/needy-locations'); }
+});
+
+// Delete needy location
+router.post('/needy-locations/:id/delete', requireAdmin, async (req, res) => {
+  try {
+    await NeedyLocation.findByIdAndDelete(req.params.id);
+    res.redirect('/admin/needy-locations');
+  } catch (err) { res.redirect('/admin/needy-locations'); }
 });

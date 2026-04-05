@@ -73,6 +73,31 @@
     </div>
     <% } %>
 
+
+    <!-- Needy Locations Panel -->
+    <div id="needyPanel" class="mb-4">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <h5 style="font-family:'DM Sans',sans-serif;font-weight:700;margin:0;color:#1a4a2e;">
+          <i class="bi bi-heart-fill text-danger me-2"></i>Suggested Needy Locations
+          <span id="needyCount" style="background:#e8f5ee;color:#1a4a2e;font-size:.72rem;padding:2px 10px;border-radius:12px;margin-left:8px;font-weight:700;"></span>
+        </h5>
+        <button type="button" onclick="toggleNeedyMap()" style="background:#f3f4f6;border:2px solid #e5e7eb;border-radius:10px;padding:7px 16px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">
+          <i class="bi bi-map me-1"></i>Show on Map
+        </button>
+      </div>
+      <div id="needyLoading" style="text-align:center;padding:20px;color:#9ca3af;">
+        <div class="spinner-border spinner-border-sm text-success me-2"></div>Loading needy locations…
+      </div>
+      <div id="needyGrid" style="display:none;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-bottom:14px;"></div>
+      <div id="needyMapNGO" style="display:none;height:280px;border-radius:14px;overflow:hidden;border:2px solid #e5e7eb;margin-bottom:14px;"></div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+      <span style="font-size:.82rem;color:#9ca3af;font-weight:600;">OR ENTER MANUALLY</span>
+      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+    </div>
+
     <div class="form-card">
       <form action="/ngo/set-delivery/<%= food._id %>" method="POST" id="setDeliveryForm">
 
@@ -195,6 +220,77 @@ document.getElementById('setDeliveryForm').addEventListener('submit', function(e
     e.preventDefault(); alert('Please enter or pick a delivery location.');
   }
 });
+</script>
+
+
+<style>
+.needy-card{background:#fff;border:2px solid #e5e7eb;border-radius:12px;padding:12px 14px;cursor:pointer;transition:all .2s;position:relative;}
+.needy-card:hover{border-color:#22c55e;box-shadow:0 4px 16px rgba(34,197,94,.15);}
+.needy-card.selected{border-color:#1a4a2e;background:#f0fdf4;}
+.needy-card .sel-badge{display:none;position:absolute;top:8px;right:8px;background:#1a4a2e;color:#fff;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:10px;}
+.needy-card.selected .sel-badge{display:block;}
+</style>
+<script>
+const _catEmojis={orphanage:'🏠',shelter:'🏕️',oldage:'👴',school:'🏫',hospital:'🏥',community:'🤝',station:'🚉',other:'📍'};
+const _catColors={orphanage:'#dbeafe',shelter:'#dcfce7',oldage:'#fef3c7',school:'#ede9fe',hospital:'#fee2e2',community:'#e0f2fe',station:'#fdf4ff',other:'#f3f4f6'};
+const _catText  ={orphanage:'#1e40af',shelter:'#065f46',oldage:'#92400e',school:'#5b21b6',hospital:'#991b1b',community:'#0369a1',station:'#7e22ce',other:'#374151'};
+const _pinColor ={orphanage:'#3b82f6',shelter:'#22c55e',oldage:'#f59e0b',school:'#8b5cf6',hospital:'#ef4444',community:'#06b6d4',station:'#a855f7',other:'#6b7280'};
+
+let _allLocs=[], _ngoNeedyMap=null, _ngoNeedyInited=false;
+
+fetch('/api/needy-locations').then(r=>r.json()).then(data=>{
+  document.getElementById('needyLoading').style.display='none';
+  if(!data.success||!data.locations.length){
+    document.getElementById('needyGrid').style.display='block';
+    document.getElementById('needyGrid').innerHTML='<p style="color:#9ca3af;font-size:.82rem;">No needy locations added by admin yet.</p>';
+    return;
+  }
+  _allLocs=data.locations;
+  document.getElementById('needyCount').textContent=data.locations.length+' locations';
+  const grid=document.getElementById('needyGrid');
+  grid.style.display='grid';
+  grid.innerHTML=_allLocs.map(loc=>`
+    <div class="needy-card" id="nnc_${loc._id}" onclick="_selectNeedy('${loc._id}')">
+      <span class="sel-badge">✓ Selected</span>
+      <div style="font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:8px;display:inline-block;margin-bottom:5px;background:${_catColors[loc.category]||'#f3f4f6'};color:${_catText[loc.category]||'#374151'}">${_catEmojis[loc.category]||'📍'} ${loc.category}</div>
+      <div style="font-weight:700;font-size:.88rem;color:#1a4a2e;margin-bottom:3px;">${loc.name}</div>
+      <div style="font-size:.76rem;color:#6b7280;">${loc.address}</div>
+      ${loc.description?`<div style="font-size:.72rem;color:#9ca3af;margin-top:3px;">${loc.description}</div>`:''}
+      ${loc.latitude?`<div style="font-size:.7rem;color:#22c55e;margin-top:3px;"><i class="bi bi-crosshair me-1"></i>GPS available</div>`:''}
+    </div>`).join('');
+}).catch(()=>document.getElementById('needyLoading').style.display='none');
+
+function _selectNeedy(id){
+  const loc=_allLocs.find(l=>l._id===id); if(!loc) return;
+  document.getElementById('delivLocText').value=loc.name+', '+loc.address;
+  document.getElementById('delivLat').value=loc.latitude||'';
+  document.getElementById('delivLng').value=loc.longitude||'';
+  document.querySelectorAll('.needy-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('nnc_'+id).classList.add('selected');
+  document.getElementById('delivLocText').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function toggleNeedyMap(){
+  const m=document.getElementById('needyMapNGO');
+  const hidden=m.style.display==='none'||!m.style.display;
+  m.style.display=hidden?'block':'none';
+  if(hidden&&!_ngoNeedyInited){
+    _ngoNeedyInited=true;
+    _ngoNeedyMap=L.map('needyMapNGO').setView([12.9716,77.5946],5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(_ngoNeedyMap);
+    const pts=[];
+    _allLocs.forEach(loc=>{
+      if(!loc.latitude||!loc.longitude) return;
+      const icon=L.divIcon({className:'',iconSize:[32,32],iconAnchor:[16,16],html:`<div style="background:${_pinColor[loc.category]||'#6b7280'};width:32px;height:32px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:14px;">${_catEmojis[loc.category]||'📍'}</div>`});
+      L.marker([loc.latitude,loc.longitude],{icon}).addTo(_ngoNeedyMap)
+        .bindPopup(`<b>${loc.name}</b><br><small>${loc.address}</small><br><a href="#" onclick="_selectNeedy('${loc._id}');return false;" style="color:#1a4a2e;font-weight:700;">✓ Select</a>`);
+      pts.push([loc.latitude,loc.longitude]);
+    });
+    if(pts.length===1) _ngoNeedyMap.setView(pts[0],14);
+    else if(pts.length>1) _ngoNeedyMap.fitBounds(L.latLngBounds(pts),{padding:[30,30]});
+    setTimeout(()=>_ngoNeedyMap.invalidateSize(),200);
+  } else if(hidden) { setTimeout(()=>_ngoNeedyMap.invalidateSize(),100); }
+}
 </script>
 
 <%- include('../partials/footer') %>

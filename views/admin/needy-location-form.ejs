@@ -1,0 +1,211 @@
+<%- include('layout-start', {title: pageTitle+' – Admin', pageTitle: pageTitle, currentPage:'needy'}) %>
+
+<a href="/admin/needy-locations" class="btn-admin-sm btn-info-sm mb-4 d-inline-flex align-items-center gap-1">
+  <i class="bi bi-arrow-left"></i> Back to Locations
+</a>
+
+<% if(error){ %><div class="alert alert-danger mb-4"><i class="bi bi-exclamation-circle me-2"></i><%= error %></div><% } %>
+
+<div class="row g-4">
+  <!-- Form -->
+  <div class="col-lg-5">
+    <div class="admin-card">
+      <div class="admin-card-title">
+        <i class="bi bi-geo-alt-fill text-success"></i>
+        <%= location && location._id ? 'Edit Location' : 'Add New Location' %>
+      </div>
+
+      <form action="/admin/needy-locations/<%= location && location._id ? location._id+'/edit' : 'add' %>" method="POST">
+        <div class="mb-3">
+          <label class="form-label fw-bold" style="font-size:.82rem;">Location Name *</label>
+          <input type="text" name="name" class="form-control" required
+            value="<%= location ? location.name||'' : '' %>"
+            placeholder="e.g. Rainbow Orphanage, City Shelter…"
+            style="border-radius:10px;border:2px solid #e5e7eb;"/>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold" style="font-size:.82rem;">Category *</label>
+          <select name="category" class="form-select" style="border-radius:10px;border:2px solid #e5e7eb;">
+            <option value="orphanage" <%= location&&location.category==='orphanage'?'selected':'' %>>🏠 Orphanage</option>
+            <option value="shelter"   <%= location&&location.category==='shelter'  ?'selected':'' %>>🏕️ Shelter</option>
+            <option value="oldage"    <%= location&&location.category==='oldage'   ?'selected':'' %>>👴 Old Age Home</option>
+            <option value="school"    <%= location&&location.category==='school'   ?'selected':'' %>>🏫 School / Anganwadi</option>
+            <option value="hospital"  <%= location&&location.category==='hospital' ?'selected':'' %>>🏥 Hospital</option>
+            <option value="community" <%= location&&location.category==='community'?'selected':'' %>>🤝 Community Kitchen</option>
+            <option value="station"   <%= location&&location.category==='station'  ?'selected':'' %>>🚉 Railway / Bus Station</option>
+            <option value="other"     <%= !location||location.category==='other'   ?'selected':'' %>>📍 Other</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold" style="font-size:.82rem;">Full Address *</label>
+          <textarea name="address" class="form-control" rows="2" required
+            placeholder="Street, Area, City, PIN"
+            style="border-radius:10px;border:2px solid #e5e7eb;"><%= location ? location.address||'' : '' %></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold" style="font-size:.82rem;">Description <span class="text-muted fw-normal">(who is served here)</span></label>
+          <input type="text" name="description" class="form-control"
+            value="<%= location ? location.description||'' : '' %>"
+            placeholder="e.g. Serves 50 children aged 5-15"
+            style="border-radius:10px;border:2px solid #e5e7eb;"/>
+        </div>
+
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label fw-bold" style="font-size:.82rem;">Contact Name</label>
+            <input type="text" name="contactName" class="form-control"
+              value="<%= location ? location.contactName||'' : '' %>"
+              placeholder="e.g. Mr. Kumar"
+              style="border-radius:10px;border:2px solid #e5e7eb;"/>
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-bold" style="font-size:.82rem;">Contact Phone</label>
+            <input type="tel" name="contactPhone" class="form-control"
+              value="<%= location ? location.contactPhone||'' : '' %>"
+              placeholder="+91 98765 43210"
+              style="border-radius:10px;border:2px solid #e5e7eb;"/>
+          </div>
+        </div>
+
+        <!-- GPS Coordinates -->
+        <div class="mb-3" style="background:#f0fdf4;border-radius:12px;padding:14px;">
+          <label class="form-label fw-bold" style="font-size:.82rem;"><i class="bi bi-crosshair me-1 text-success"></i>GPS Coordinates</label>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <input type="number" step="any" name="latitude"  id="lat" class="form-control"
+                value="<%= location && location.latitude  ? location.latitude  : '' %>"
+                placeholder="Latitude" style="border-radius:8px;border:2px solid #e5e7eb;font-size:.85rem;"/>
+            </div>
+            <div class="col-6">
+              <input type="number" step="any" name="longitude" id="lng" class="form-control"
+                value="<%= location && location.longitude ? location.longitude : '' %>"
+                placeholder="Longitude" style="border-radius:8px;border:2px solid #e5e7eb;font-size:.85rem;"/>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" onclick="useMyLocation()" style="background:#22c55e;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">
+              <i class="bi bi-geo-alt-fill me-1"></i>Use My Location
+            </button>
+            <button type="button" onclick="geocodeAddress()" style="background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">
+              <i class="bi bi-search me-1"></i>Find from Address
+            </button>
+          </div>
+          <p style="font-size:.73rem;color:#9ca3af;margin-top:8px;margin-bottom:0;">Or click directly on the map →</p>
+        </div>
+
+        <% if (location && location._id) { %>
+        <div class="mb-4 d-flex align-items-center gap-3">
+          <label class="form-label fw-bold mb-0" style="font-size:.82rem;">Status</label>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="isActive" id="isActive"
+              <%= location.isActive ? 'checked' : '' %> style="width:40px;height:22px;cursor:pointer;"/>
+            <label class="form-check-label" for="isActive" style="font-size:.85rem;">Active (visible to donors & NGOs)</label>
+          </div>
+        </div>
+        <% } %>
+
+        <button type="submit" class="btn btn-primary w-100" style="border-radius:12px;background:#1a4a2e;border:none;font-family:'DM Sans',sans-serif;font-weight:700;padding:13px;">
+          <i class="bi bi-check2-circle me-2"></i><%= location && location._id ? 'Save Changes' : 'Add Location' %>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Map picker -->
+  <div class="col-lg-7">
+    <div class="admin-card" style="padding:0;overflow:hidden;position:sticky;top:80px;">
+      <div style="padding:14px 20px;border-bottom:1px solid #f3f4f6;font-weight:700;font-size:.9rem;">
+        <i class="bi bi-cursor text-success me-2"></i>Click on map to set coordinates
+      </div>
+      <div id="adminLocMap" style="height:500px;"></div>
+      <div style="padding:10px 16px;background:#fafafa;font-size:.78rem;color:#6b7280;border-top:1px solid #f3f4f6;">
+        <i class="bi bi-info-circle me-1"></i>Click anywhere on the map to set the exact GPS pin for this location.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let adminMap, adminMarker;
+
+window.addEventListener('load', function() {
+  const initLat = parseFloat(document.getElementById('lat').value) || 12.9716;
+  const initLng = parseFloat(document.getElementById('lng').value) || 77.5946;
+  const initZoom = document.getElementById('lat').value ? 15 : 5;
+
+  adminMap = L.map('adminLocMap').setView([initLat, initLng], initZoom);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap', maxZoom:19 }).addTo(adminMap);
+
+  const pinIcon = L.divIcon({ className:'',
+    html:'<div style="background:#1a4a2e;width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 12px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:14px;">📍</div>',
+    iconSize:[28,28], iconAnchor:[14,14] });
+
+  // If existing coords, place marker
+  if (document.getElementById('lat').value) {
+    adminMarker = L.marker([initLat, initLng], { icon: pinIcon, draggable: true }).addTo(adminMap);
+    adminMarker.on('dragend', e => setCoords(e.target.getLatLng().lat, e.target.getLatLng().lng));
+  }
+
+  // Click to set
+  adminMap.on('click', e => {
+    setCoords(e.latlng.lat, e.latlng.lng);
+    if (adminMarker) adminMap.removeLayer(adminMarker);
+    adminMarker = L.marker([e.latlng.lat, e.latlng.lng], { icon: pinIcon, draggable: true }).addTo(adminMap);
+    adminMarker.on('dragend', ev => setCoords(ev.target.getLatLng().lat, ev.target.getLatLng().lng));
+    reverseGeocode(e.latlng.lat, e.latlng.lng);
+  });
+
+  setTimeout(() => adminMap.invalidateSize(), 300);
+});
+
+function setCoords(lat, lng) {
+  document.getElementById('lat').value = lat.toFixed(6);
+  document.getElementById('lng').value = lng.toFixed(6);
+}
+
+function reverseGeocode(lat, lng) {
+  fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+    .then(r => r.json())
+    .then(d => {
+      const addrField = document.querySelector('textarea[name="address"]');
+      if (addrField && !addrField.value.trim()) addrField.value = d.display_name || '';
+    }).catch(() => {});
+}
+
+function useMyLocation() {
+  if (!navigator.geolocation) return alert('Geolocation not supported');
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+    setCoords(lat, lng);
+    adminMap.setView([lat, lng], 16);
+    if (adminMarker) adminMap.removeLayer(adminMarker);
+    const pinIcon = L.divIcon({ className:'', html:'<div style="background:#1a4a2e;width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 12px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:14px;">📍</div>', iconSize:[28,28], iconAnchor:[14,14] });
+    adminMarker = L.marker([lat,lng],{icon:pinIcon,draggable:true}).addTo(adminMap);
+    adminMarker.on('dragend', e => setCoords(e.target.getLatLng().lat, e.target.getLatLng().lng));
+    reverseGeocode(lat, lng);
+  }, () => alert('Location denied'));
+}
+
+function geocodeAddress() {
+  const addr = document.querySelector('textarea[name="address"]').value;
+  if (!addr.trim()) return alert('Enter an address first');
+  fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(addr)+'&format=json&limit=1', { headers:{'Accept-Language':'en'} })
+    .then(r => r.json())
+    .then(d => {
+      if (!d || !d.length) return alert('Could not find this address on map. Try a more specific address.');
+      const lat = parseFloat(d[0].lat), lng = parseFloat(d[0].lon);
+      setCoords(lat, lng);
+      adminMap.setView([lat, lng], 16);
+      if (adminMarker) adminMap.removeLayer(adminMarker);
+      const pinIcon = L.divIcon({ className:'', html:'<div style="background:#1a4a2e;width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 12px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:14px;">📍</div>', iconSize:[28,28], iconAnchor:[14,14] });
+      adminMarker = L.marker([lat,lng],{icon:pinIcon,draggable:true}).addTo(adminMap);
+      adminMarker.on('dragend', e => setCoords(e.target.getLatLng().lat, e.target.getLatLng().lng));
+    })
+    .catch(() => alert('Geocoding failed. Check your internet connection.'));
+}
+</script>
+
+<%- include('layout-end') %>

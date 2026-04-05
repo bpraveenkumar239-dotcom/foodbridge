@@ -1,0 +1,193 @@
+<%- include('layout-start', {title:'Needy Locations – Admin', pageTitle:'Needy Locations', currentPage:'needy'}) %>
+
+<% const catConfig = {
+  orphanage: { emoji:'🏠', label:'Orphanage',      color:'#dbeafe', text:'#1e40af' },
+  shelter:   { emoji:'🏕️', label:'Shelter',        color:'#dcfce7', text:'#065f46' },
+  oldage:    { emoji:'👴', label:'Old Age Home',    color:'#fef3c7', text:'#92400e' },
+  school:    { emoji:'🏫', label:'School',          color:'#ede9fe', text:'#5b21b6' },
+  hospital:  { emoji:'🏥', label:'Hospital',        color:'#fee2e2', text:'#991b1b' },
+  community: { emoji:'🤝', label:'Community',       color:'#e0f2fe', text:'#0369a1' },
+  station:   { emoji:'🚉', label:'Railway/Bus Stn', color:'#fdf4ff', text:'#7e22ce' },
+  other:     { emoji:'📍', label:'Other',           color:'#f3f4f6', text:'#374151' }
+}; %>
+
+<!-- Top bar -->
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+  <% if(query.msg){ %>
+    <div class="alert alert-success mb-0 py-2 px-4" style="border-radius:10px;font-size:.88rem;">
+      <i class="bi bi-check-circle me-2"></i><%= query.msg %>
+    </div>
+  <% } else { %>
+    <div></div>
+  <% } %>
+  <a href="/admin/needy-locations/add" style="background:#1a4a2e;color:#fff;text-decoration:none;border-radius:12px;padding:11px 22px;font-weight:700;font-family:'DM Sans',sans-serif;font-size:.9rem;display:inline-flex;align-items:center;gap:8px;">
+    <i class="bi bi-plus-circle"></i> Add Needy Location
+  </a>
+</div>
+
+<!-- Filter bar -->
+<form method="GET" action="/admin/needy-locations" class="filter-bar mb-4">
+  <input type="text" name="search" placeholder="🔍 Search name or address…" value="<%= query.search||'' %>"/>
+  <select name="category">
+    <option value="all">All Categories</option>
+    <% Object.entries(catConfig).forEach(([k,v]) => { %>
+      <option value="<%= k %>" <%=query.category===k?'selected':''%>><%= v.emoji %> <%= v.label %></option>
+    <% }) %>
+  </select>
+  <button type="submit" class="btn-filter"><i class="bi bi-search me-1"></i>Search</button>
+  <a href="/admin/needy-locations" class="btn-reset">Reset</a>
+  <span style="margin-left:auto;font-size:.82rem;color:#6b7280;"><%= locations.length %> location<%= locations.length!==1?'s':'' %></span>
+</form>
+
+<!-- Map preview of all locations -->
+<% if (locations.length > 0) { %>
+<div class="admin-card" style="padding:0;overflow:hidden;margin-bottom:20px;">
+  <div style="padding:14px 20px;border-bottom:1px solid #f3f4f6;font-weight:700;font-size:.9rem;display:flex;align-items:center;gap:8px;">
+    <i class="bi bi-map text-success"></i> All Needy Locations Map
+  </div>
+  <div id="needyMap" style="height:320px;width:100%;"></div>
+</div>
+<% } %>
+
+<!-- Locations grid -->
+<% if (locations.length === 0) { %>
+  <div style="text-align:center;padding:60px;background:#fff;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.06);">
+    <div style="font-size:3rem;margin-bottom:12px;">📍</div>
+    <h4 style="color:#1a4a2e;">No needy locations yet</h4>
+    <p style="color:#6b7280;">Add locations like orphanages, shelters, and community centres so donors and NGOs can deliver food there.</p>
+    <a href="/admin/needy-locations/add" style="display:inline-flex;align-items:center;gap:8px;background:#1a4a2e;color:#fff;text-decoration:none;border-radius:12px;padding:12px 24px;font-weight:700;margin-top:8px;">
+      <i class="bi bi-plus-circle"></i> Add First Location
+    </a>
+  </div>
+<% } else { %>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">
+    <% locations.forEach(loc => {
+      const cat = catConfig[loc.category] || catConfig.other;
+    %>
+      <div style="background:#fff;border-radius:16px;padding:22px;box-shadow:0 2px 10px rgba(0,0,0,.06);border-left:4px solid <%= cat.color %>;transition:all .2s;position:relative;"
+           onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,.1)'"
+           onmouseout="this.style.transform='';this.style.boxShadow='0 2px 10px rgba(0,0,0,.06)'">
+
+        <!-- Active badge -->
+        <div style="position:absolute;top:14px;right:14px;">
+          <% if (loc.isActive) { %>
+            <span style="background:#dcfce7;color:#065f46;font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:12px;">● ACTIVE</span>
+          <% } else { %>
+            <span style="background:#fee2e2;color:#991b1b;font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:12px;">● INACTIVE</span>
+          <% } %>
+        </div>
+
+        <!-- Header -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+          <div style="width:46px;height:46px;border-radius:12px;background:<%= cat.color %>;display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;">
+            <%= cat.emoji %>
+          </div>
+          <div style="min-width:0;">
+            <div style="font-weight:700;font-size:1rem;color:#1a4a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:70px;"><%= loc.name %></div>
+            <span style="background:<%= cat.color %>;color:<%= cat.text %>;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:8px;"><%= cat.label %></span>
+          </div>
+        </div>
+
+        <!-- Details -->
+        <div style="font-size:.84rem;color:#4b5563;display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <i class="bi bi-geo-alt text-warning" style="margin-top:2px;flex-shrink:0;"></i>
+            <span><%= loc.address %></span>
+          </div>
+          <% if (loc.latitude) { %>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <i class="bi bi-crosshair text-success" style="flex-shrink:0;"></i>
+              <span style="color:#9ca3af;font-size:.78rem;"><%= loc.latitude.toFixed(4) %>, <%= loc.longitude.toFixed(4) %></span>
+              <a href="https://www.openstreetmap.org/?mlat=<%= loc.latitude %>&mlon=<%= loc.longitude %>#map=16/<%= loc.latitude %>/<%= loc.longitude %>" target="_blank" style="font-size:.72rem;color:#3b82f6;margin-left:auto;">View →</a>
+            </div>
+          <% } %>
+          <% if (loc.description) { %>
+            <div style="display:flex;gap:8px;align-items:flex-start;">
+              <i class="bi bi-info-circle text-primary" style="margin-top:2px;flex-shrink:0;"></i>
+              <span><%= loc.description %></span>
+            </div>
+          <% } %>
+          <% if (loc.contactName || loc.contactPhone) { %>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <i class="bi bi-person-fill text-purple" style="flex-shrink:0;"></i>
+              <span><%= loc.contactName || '' %><% if(loc.contactPhone){ %>&nbsp;·&nbsp;<a href="tel:<%= loc.contactPhone %>" style="color:#1a4a2e;font-weight:600;text-decoration:none;"><%= loc.contactPhone %></a><% } %></span>
+            </div>
+          <% } %>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <i class="bi bi-clock text-muted" style="flex-shrink:0;"></i>
+            <span style="color:#9ca3af;font-size:.75rem;">Added <%= new Date(loc.createdAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) %></span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex;gap:8px;">
+          <a href="/admin/needy-locations/<%= loc._id %>/edit" class="btn-admin-sm btn-info-sm flex-fill" style="text-decoration:none;text-align:center;">
+            <i class="bi bi-pencil me-1"></i>Edit
+          </a>
+          <form action="/admin/needy-locations/<%= loc._id %>/toggle" method="POST" style="flex:1;">
+            <button type="submit" class="btn-admin-sm <%= loc.isActive?'btn-warn-sm':'btn-success-sm' %> w-100">
+              <i class="bi bi-<%= loc.isActive?'pause-circle':'play-circle' %> me-1"></i><%= loc.isActive?'Disable':'Enable' %>
+            </button>
+          </form>
+          <button class="btn-admin-sm btn-danger-sm" onclick="confirmDeleteLoc('<%= loc._id %>','<%= loc.name.replace(/'/g,'') %>')">
+            <i class="bi bi-trash3"></i>
+          </button>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+<% } %>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteLocModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">🗑️ Delete Location</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body"><p>Delete <strong id="deleteLocName"></strong>? This cannot be undone.</p></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <form id="deleteLocForm" method="POST" style="display:inline;">
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function confirmDeleteLoc(id, name) {
+  document.getElementById('deleteLocName').textContent = name;
+  document.getElementById('deleteLocForm').action = '/admin/needy-locations/' + id + '/delete';
+  new bootstrap.Modal(document.getElementById('deleteLocModal')).show();
+}
+
+// Map
+<% if (locations.length > 0) { %>
+window.addEventListener('load', function() {
+  const map = L.map('needyMap').setView([12.9716, 77.5946], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap', maxZoom:19 }).addTo(map);
+
+  const catColors = { orphanage:'#3b82f6', shelter:'#22c55e', oldage:'#f59e0b', school:'#8b5cf6', hospital:'#ef4444', community:'#06b6d4', station:'#a855f7', other:'#6b7280' };
+  const catEmojis = { orphanage:'🏠', shelter:'🏕️', oldage:'👴', school:'🏫', hospital:'🏥', community:'🤝', station:'🚉', other:'📍' };
+
+  const locs = <%- JSON.stringify(locations.map(l => ({ name:l.name, address:l.address, lat:l.latitude, lng:l.longitude, cat:l.category, active:l.isActive }))) %>;
+  const pts = [];
+
+  locs.forEach(loc => {
+    if (!loc.lat || !loc.lng) return;
+    const color = loc.active ? (catColors[loc.cat]||'#6b7280') : '#d1d5db';
+    const emoji = catEmojis[loc.cat] || '📍';
+    const icon  = L.divIcon({ className:'', iconSize:[36,36], iconAnchor:[18,18],
+      html:`<div style="background:${color};width:36px;height:36px;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:16px;opacity:${loc.active?1:0.5};">${emoji}</div>` });
+    L.marker([loc.lat,loc.lng],{icon}).addTo(map).bindPopup(`<b>${emoji} ${loc.name}</b><br><small>${loc.address}</small>${!loc.active?'<br><span style="color:#ef4444;">Inactive</span>':''}`);
+    pts.push([loc.lat, loc.lng]);
+  });
+
+  if (pts.length === 1) map.setView(pts[0], 14);
+  else if (pts.length > 1) map.fitBounds(L.latLngBounds(pts), { padding:[40,40] });
+  setTimeout(() => map.invalidateSize(), 300);
+});
+<% } %>
+</script>
+
+<%- include('layout-end') %>
