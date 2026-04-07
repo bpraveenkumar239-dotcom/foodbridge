@@ -401,13 +401,14 @@ a { -webkit-tap-highlight-color: transparent; }
 .btn-primary {
   background: var(--green-dark) !important;
   border-color: var(--green-dark) !important;
+  color: #fff !important;
   border-radius: 10px;
   font-family: 'DM Sans', sans-serif;
   font-weight: 600;
   transition: all .2s;
   min-height: 44px;
 }
-.btn-primary:hover { background: var(--green-mid) !important; border-color: var(--green-mid) !important; }
+.btn-primary:hover { background: var(--green-mid) !important; border-color: var(--green-mid) !important; color: #fff !important; }
 .btn-submit { padding: 13px 28px; }
 
 .btn-ghost {
@@ -981,17 +982,18 @@ html, body { overflow-x: hidden; width: 100%; }
   background: #f3f4f6; border: 2px solid #e5e7eb;
   border-radius: 10px; padding: 8px 16px;
   font-size: .82rem; font-weight: 600;
+  color: #374151;
   cursor: pointer; font-family: 'DM Sans', sans-serif;
   transition: all .2s; white-space: nowrap;
   min-height: 40px;
 }
-.needy-map-btn:hover { background: #e5e7eb; }
+.needy-map-btn:hover { background: #e5e7eb; color: #1a4a2e; }
 
 .needy-divider {
   display: flex; align-items: center; gap: 12px; margin: 20px 0;
 }
 .needy-divider-line { flex: 1; height: 1px; background: #e5e7eb; }
-.needy-divider-text { font-size: .78rem; color: #9ca3af; font-weight: 600; white-space: nowrap; }
+.needy-divider-text { font-size: .78rem; color: #6b7280; font-weight: 700; white-space: nowrap; }
 
 /* Selected address display */
 .selected-location-bar {

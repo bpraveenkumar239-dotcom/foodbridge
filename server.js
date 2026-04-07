@@ -51,16 +51,19 @@ const authRoutes  = require('./routes/auth');
 const donorRoutes = require('./routes/donor');
 const ngoRoutes   = require('./routes/ngo');
 const adminRoutes = require('./routes/admin');
+const apiRoutes   = require('./routes/api');
 
 console.log('auth:',  typeof authRoutes);
 console.log('donor:', typeof donorRoutes);
 console.log('ngo:',   typeof ngoRoutes);
 console.log('admin:', typeof adminRoutes);
+console.log('api:',   typeof apiRoutes);
 
 app.use('/', authRoutes);
 app.use('/donor', donorRoutes);
 app.use('/ngo', ngoRoutes);
 app.use('/admin', adminRoutes);
+app.use('/api', apiRoutes);
 
 app.get('/', (req, res) => {
   const u = req.session.user;

@@ -20,3 +20,36 @@
   <link rel="stylesheet" href="/css/style.css"/>
 </head>
 <body>
+<!-- ── App Splash Screen (hides Render cold-start loading page) ── -->
+<div id="fb-splash" style="
+  position:fixed;inset:0;z-index:99999;
+  background:linear-gradient(135deg,#1a4a2e 0%,#2d7a4f 50%,#4caf77 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity .4s ease;
+">
+  <img src="/images/icon-192.png" style="width:88px;height:88px;border-radius:22px;box-shadow:0 8px 32px rgba(0,0,0,.3);margin-bottom:20px;" alt="FoodBridge"/>
+  <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:6px;">FoodBridge</div>
+  <div style="font-family:'DM Sans',sans-serif;font-size:.88rem;color:rgba(255,255,255,.75);margin-bottom:32px;">Connecting hearts through food</div>
+  <div style="width:36px;height:36px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:fbSpin .8s linear infinite;"></div>
+</div>
+<style>
+@keyframes fbSpin{to{transform:rotate(360deg)}}
+</style>
+<script>
+  // Hide splash once the page is interactive
+  (function(){
+    function hideSplash(){
+      var s=document.getElementById('fb-splash');
+      if(!s)return;
+      s.style.opacity='0';
+      setTimeout(function(){s.remove();},450);
+    }
+    if(document.readyState==='complete'||document.readyState==='interactive'){
+      setTimeout(hideSplash,300);
+    } else {
+      window.addEventListener('DOMContentLoaded',function(){setTimeout(hideSplash,300);});
+    }
+    // Failsafe: always remove within 3s
+    setTimeout(hideSplash,3000);
+  })();
+</script>
