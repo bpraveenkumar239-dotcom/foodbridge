@@ -1,19 +1,14 @@
-// FoodBridge — app.js (PWA + auto-update)
+// FoodBridge — app.js (PWA + auto-update + keep-alive)
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       const reg = await navigator.serviceWorker.register('/service-worker.js');
-      // Check for new version on every page load
       reg.update().catch(() => {});
-
-      // If a new SW installed and is waiting → it already called skipWaiting
-      // so controllerchange fires → we reload automatically below
       reg.addEventListener('updatefound', () => {
         const w = reg.installing;
         w.addEventListener('statechange', () => {
           if (w.state === 'installed' && navigator.serviceWorker.controller) {
-            // Show banner so user knows update is happening
             showUpdateToast();
           }
         });
@@ -21,12 +16,27 @@ if ('serviceWorker' in navigator) {
     } catch(err) { /* SW unavailable, app still works */ }
   });
 
-  // When SW activates (skipWaiting ran) → reload page to load new code
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!reloading) { reloading = true; window.location.reload(); }
   });
 }
+
+// ── Keep-alive pinger (prevents Render free-tier cold starts) ────────────
+// Pings /health every 13 minutes so the server never idles for 15 mins
+(function startKeepAlive() {
+  const INTERVAL = 13 * 60 * 1000; // 13 minutes
+  function ping() {
+    fetch('/health', { method: 'GET', cache: 'no-store' }).catch(() => {});
+  }
+  // Ping immediately when page loads, then on interval
+  ping();
+  setInterval(ping, INTERVAL);
+  // Also re-ping when user returns to tab after being away
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') ping();
+  });
+})();
 
 function showUpdateToast() {
   if (document.getElementById('fb-toast')) return;

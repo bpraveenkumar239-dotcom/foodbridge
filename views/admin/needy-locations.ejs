@@ -25,6 +25,56 @@
   </a>
 </div>
 
+<!-- ══ PENDING SUGGESTIONS SECTION ══ -->
+<% const pending = locations.filter(l => l.status === 'pending'); %>
+<% if (pending.length > 0) { %>
+<div style="background:#fffbeb;border:2px solid #fde68a;border-radius:16px;padding:20px;margin-bottom:24px;">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+    <span style="background:#fef3c7;border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">⏳</span>
+    <div>
+      <h5 style="margin:0;font-weight:700;color:#92400e;font-size:.95rem;">Pending Suggestions (<%= pending.length %>)</h5>
+      <p style="margin:0;font-size:.75rem;color:#a16207;">Donors and NGOs have suggested these locations — approve or reject each one</p>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    <% pending.forEach(loc => {
+      const cat = catConfig[loc.category] || catConfig.other;
+    %>
+      <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+        <div style="width:40px;height:40px;border-radius:10px;background:<%= cat.color %>;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">
+          <%= cat.emoji %>
+        </div>
+        <div style="flex:1;min-width:200px;">
+          <div style="font-weight:700;font-size:.92rem;color:#1a4a2e;"><%= loc.name %></div>
+          <div style="font-size:.78rem;color:#6b7280;margin-top:2px;"><i class="bi bi-geo-alt me-1"></i><%= loc.address %></div>
+          <% if (loc.description) { %><div style="font-size:.76rem;color:#9ca3af;margin-top:2px;"><%= loc.description %></div><% } %>
+          <div style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="background:<%= cat.color %>;color:<%= cat.text %>;font-size:.66rem;font-weight:700;padding:2px 8px;border-radius:8px;"><%= cat.label %></span>
+            <span style="font-size:.72rem;color:#6b7280;">
+              Suggested by <strong><%= loc.addedByName || loc.addedBy %></strong>
+              (<%= loc.addedByRole === 'donor' ? '🙋 Donor' : '🚚 NGO' %>)
+            </span>
+            <% if (loc.contactPhone) { %><span style="font-size:.72rem;color:#1a4a2e;"><i class="bi bi-telephone me-1"></i><%= loc.contactPhone %></span><% } %>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;align-self:center;">
+          <form action="/admin/needy-locations/<%= loc._id %>/approve" method="POST" style="margin:0;">
+            <button type="submit" style="background:#16a34a;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-weight:700;font-size:.82rem;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:5px;">
+              <i class="bi bi-check-lg"></i> Approve
+            </button>
+          </form>
+          <form action="/admin/needy-locations/<%= loc._id %>/reject" method="POST" style="margin:0;">
+            <button type="submit" style="background:#dc2626;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-weight:700;font-size:.82rem;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:5px;">
+              <i class="bi bi-x-lg"></i> Reject
+            </button>
+          </form>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</div>
+<% } %>
+
 <!-- Filter bar -->
 <form method="GET" action="/admin/needy-locations" class="filter-bar mb-4">
   <input type="text" name="search" placeholder="🔍 Search name or address…" value="<%= query.search||'' %>"/>
@@ -60,8 +110,14 @@
     </a>
   </div>
 <% } else { %>
+  <% const approved = locations.filter(l => l.status !== 'pending'); %>
+  <% if (approved.length === 0) { %>
+    <div style="text-align:center;padding:40px;background:#fff;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.06);">
+      <p style="color:#6b7280;">No approved locations yet. Approve pending suggestions above or add one manually.</p>
+    </div>
+  <% } else { %>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">
-    <% locations.forEach(loc => {
+    <% approved.forEach(loc => {
       const cat = catConfig[loc.category] || catConfig.other;
     %>
       <div style="background:#fff;border-radius:16px;padding:22px;box-shadow:0 2px 10px rgba(0,0,0,.06);border-left:4px solid <%= cat.color %>;transition:all .2s;position:relative;"
@@ -136,6 +192,7 @@
       </div>
     <% }) %>
   </div>
+  <% } %>
 <% } %>
 
 <!-- Delete Modal -->

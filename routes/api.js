@@ -101,7 +101,14 @@ router.post('/expire-check', async (req, res) => {
 router.get('/needy-locations', requireAuth, async (req, res) => {
   try {
     const NeedyLocation = require('../models/NeedyLocation');
-    const locations = await NeedyLocation.find({ isActive: true }).sort({ name: 1 });
+    const userEmail = req.session.user.email;
+    // Show approved locations + this user's own pending suggestions
+    const locations = await NeedyLocation.find({
+      $or: [
+        { isActive: true, status: 'approved' },
+        { addedBy: userEmail, status: 'pending' }
+      ]
+    }).sort({ status: 1, name: 1 });
     res.json({ success: true, locations });
   } catch (err) {
     res.json({ success: false, locations: [] });

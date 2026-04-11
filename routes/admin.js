@@ -412,6 +412,26 @@ router.post('/needy-locations/:id/toggle', requireAdmin, async (req, res) => {
   } catch (err) { res.redirect('/admin/needy-locations'); }
 });
 
+// Approve a user-suggested location
+router.post('/needy-locations/:id/approve', requireAdmin, async (req, res) => {
+  try {
+    await NeedyLocation.findByIdAndUpdate(req.params.id, {
+      status: 'approved', isActive: true, updatedAt: new Date()
+    });
+    res.redirect('/admin/needy-locations?msg=Location+approved');
+  } catch (err) { res.redirect('/admin/needy-locations'); }
+});
+
+// Reject a user-suggested location
+router.post('/needy-locations/:id/reject', requireAdmin, async (req, res) => {
+  try {
+    await NeedyLocation.findByIdAndUpdate(req.params.id, {
+      status: 'rejected', isActive: false, updatedAt: new Date()
+    });
+    res.redirect('/admin/needy-locations?msg=Location+rejected');
+  } catch (err) { res.redirect('/admin/needy-locations'); }
+});
+
 // Delete needy location
 router.post('/needy-locations/:id/delete', requireAdmin, async (req, res) => {
   try {

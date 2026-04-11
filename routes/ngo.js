@@ -184,4 +184,30 @@ router.get('/leaderboard', requireNGO, async (req, res) => {
   }
 });
 
+// ── Suggest a needy location ──────────────────────────────────────────────
+router.post('/suggest-location', requireNGO, async (req, res) => {
+  try {
+    const NeedyLocation = require('../models/NeedyLocation');
+    const { name, address, category, description, contactName, contactPhone, latitude, longitude } = req.body;
+    if (!name || !address) return res.json({ success: false, message: 'Name and address are required.' });
+    await NeedyLocation.create({
+      name: name.trim(), address: address.trim(),
+      category: category || 'other',
+      description: description ? description.trim() : '',
+      contactName: contactName ? contactName.trim() : '',
+      contactPhone: contactPhone ? contactPhone.trim() : '',
+      latitude:  parseFloat(latitude)  || null,
+      longitude: parseFloat(longitude) || null,
+      addedBy:     req.session.user.email,
+      addedByName: req.session.user.name,
+      addedByRole: 'ngo',
+      status:   'pending',
+      isActive: false   // Admin must approve before it shows to others
+    });
+    res.json({ success: true, message: 'Thank you! Your suggestion has been sent to admin for review.' });
+  } catch (err) {
+    res.json({ success: false, message: 'Could not save suggestion. Try again.' });
+  }
+});
+
 module.exports = router;
