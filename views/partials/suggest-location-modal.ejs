@@ -1,345 +1,240 @@
 <!-- ══════════════════════════════════════════════════
      Suggest Needy Location Modal
-     Usage: <%- include('../partials/suggest-location-modal', { role: 'donor' }) %>
-            <%- include('../partials/suggest-location-modal', { role: 'ngo'   }) %>
+     Usage: include with role='donor' or role='ngo'
      ══════════════════════════════════════════════════ -->
 
-<!-- Floating Button -->
-<button id="suggestNeedyBtn" onclick="openSuggestNeedyModal()" style="
+<!-- Floating Suggest Button -->
+<button id="suggestLocBtn" onclick="openSuggestModal()" style="
   position:fixed;bottom:84px;right:18px;z-index:1200;
   background:linear-gradient(135deg,#1a4a2e,#2d7a4f);
   color:#fff;border:none;border-radius:50px;
-  padding:12px 20px;font-family:'DM Sans',sans-serif;
+  padding:12px 18px;font-family:'DM Sans',sans-serif;
   font-weight:700;font-size:.82rem;cursor:pointer;
   box-shadow:0 4px 18px rgba(26,74,46,.4);
   display:flex;align-items:center;gap:8px;
-  transition:transform .2s,box-shadow .2s;">
-  <i class="bi bi-geo-alt-fill"></i> Suggest Needy Location
+  transition:transform .2s,box-shadow .2s;
+" onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(26,74,46,.5)'"
+   onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 18px rgba(26,74,46,.4)'">
+  <i class="bi bi-geo-alt-fill"></i> Suggest Location
 </button>
 
-<!-- Backdrop -->
-<div id="suggestNeedyBackdrop" onclick="closeSuggestNeedyModal()" style="
-  display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
-  z-index:1300;backdrop-filter:blur(2px);"></div>
+<!-- Modal Backdrop -->
+<div id="suggestModalBackdrop" onclick="closeSuggestModal()" style="
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:1300;backdrop-filter:blur(2px);
+"></div>
 
 <!-- Modal -->
-<div id="suggestNeedyModal" style="
-  display:none;position:fixed;bottom:0;left:0;right:0;z-index:1400;
-  background:#fff;border-radius:24px 24px 0 0;max-height:94vh;overflow-y:auto;
-  box-shadow:0 -8px 40px rgba(0,0,0,.22);font-family:'DM Sans',sans-serif;
-  transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);">
+<div id="suggestModal" style="
+  display:none;position:fixed;bottom:0;left:0;right:0;
+  z-index:1400;background:#fff;
+  border-radius:24px 24px 0 0;
+  padding:24px 20px 36px;
+  max-height:90vh;overflow-y:auto;
+  box-shadow:0 -8px 40px rgba(0,0,0,.2);
+  font-family:'DM Sans',sans-serif;
+  transform:translateY(100%);transition:transform .3s ease;
+">
+  <!-- Handle -->
+  <div style="width:40px;height:4px;background:#e5e7eb;border-radius:4px;margin:0 auto 20px;"></div>
 
-  <div style="width:40px;height:4px;background:#d1d5db;border-radius:4px;margin:14px auto 0;"></div>
-
-  <!-- Header -->
-  <div style="display:flex;align-items:center;gap:12px;padding:18px 20px 0;">
-    <div style="background:#e8f5ee;border-radius:14px;width:48px;height:48px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;">📍</div>
-    <div style="flex:1;">
-      <h5 style="margin:0;font-weight:700;color:#1a4a2e;font-size:1.05rem;">Suggest Needy Location</h5>
-      <p style="margin:0;font-size:.75rem;color:#6b7280;">Admin will review &amp; approve your suggestion</p>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+    <div style="background:#e8f5ee;border-radius:12px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">📍</div>
+    <div>
+      <h5 style="margin:0;font-weight:700;color:#1a4a2e;font-size:1rem;">Suggest a Needy Location</h5>
+      <p style="margin:0;font-size:.75rem;color:#6b7280;">Admin will review and approve your suggestion</p>
     </div>
-    <button onclick="closeSuggestNeedyModal()" style="background:none;border:none;font-size:1.4rem;color:#9ca3af;cursor:pointer;padding:4px;line-height:1;">&#x2715;</button>
   </div>
 
-  <!-- Success -->
-  <div id="snSuccess" style="display:none;padding:36px 20px;text-align:center;">
-    <div style="font-size:3rem;margin-bottom:10px;">🎉</div>
-    <div style="font-weight:700;color:#14532d;font-size:1rem;margin-bottom:6px;">Suggestion Submitted!</div>
-    <div style="color:#166534;font-size:.85rem;">Admin will review it shortly. Thank you!</div>
+  <!-- Success message -->
+  <div id="suggestSuccess" style="display:none;background:#f0fdf4;border:2px solid #4ade80;border-radius:14px;padding:18px;text-align:center;margin-bottom:14px;">
+    <div style="font-size:2rem;margin-bottom:6px;">🎉</div>
+    <div style="font-weight:700;color:#14532d;font-size:.95rem;">Suggestion Submitted!</div>
+    <div style="color:#166534;font-size:.8rem;margin-top:4px;">Admin will review it shortly. Thank you!</div>
   </div>
 
-  <!-- Form -->
-  <form id="snForm" onsubmit="snSubmit(event)" style="padding:18px 20px 36px;">
-
-    <!-- Step tabs -->
-    <div style="display:flex;margin-bottom:20px;border:2px solid #e5e7eb;border-radius:12px;overflow:hidden;">
-      <button type="button" id="snTab1" onclick="snGoStep(1)"
-        style="flex:1;padding:11px 6px;border:none;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;background:#1a4a2e;color:#fff;">
-        ① Details
-      </button>
-      <button type="button" id="snTab2" onclick="snGoStep(2)"
-        style="flex:1;padding:11px 6px;border:none;border-left:2px solid #e5e7eb;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.8rem;cursor:pointer;background:#f9fafb;color:#6b7280;">
-        ② Pin on Map
-      </button>
+  <form id="suggestForm" onsubmit="submitSuggestion(event)">
+    <!-- Name -->
+    <div style="margin-bottom:14px;">
+      <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Location Name *</label>
+      <input type="text" id="sug_name" required placeholder="e.g. Sunrise Orphanage"
+        style="width:100%;border:2px solid #e5e7eb;border-radius:10px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;box-sizing:border-box;"
+        onfocus="this.style.borderColor='#22c55e'" onblur="this.style.borderColor='#e5e7eb'"/>
     </div>
 
-    <!-- STEP 1 -->
-    <div id="snStep1">
-      <div style="margin-bottom:14px;">
-        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Location Name <span style="color:#ef4444;">*</span></label>
-        <input type="text" id="sn_name" required placeholder="e.g. Sunrise Orphanage, City Shelter…"
-          style="width:100%;border:2px solid #e5e7eb;border-radius:10px;padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;box-sizing:border-box;"
+    <!-- Category -->
+    <div style="margin-bottom:14px;">
+      <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Category</label>
+      <select id="sug_category" style="width:100%;border:2px solid #e5e7eb;border-radius:10px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;background:#fff;box-sizing:border-box;"
+        onfocus="this.style.borderColor='#22c55e'" onblur="this.style.borderColor='#e5e7eb'">
+        <option value="orphanage">🏠 Orphanage</option>
+        <option value="shelter">🏕️ Shelter</option>
+        <option value="oldage">👴 Old Age Home</option>
+        <option value="school">🏫 School</option>
+        <option value="hospital">🏥 Hospital</option>
+        <option value="community">🤝 Community Centre</option>
+        <option value="station">🚉 Railway Station</option>
+        <option value="other" selected>📍 Other</option>
+      </select>
+    </div>
+
+    <!-- Address -->
+    <div style="margin-bottom:14px;">
+      <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Address *</label>
+      <input type="text" id="sug_address" required placeholder="Full address"
+        style="width:100%;border:2px solid #e5e7eb;border-radius:10px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;box-sizing:border-box;"
+        onfocus="this.style.borderColor='#22c55e'" onblur="this.style.borderColor='#e5e7eb'"/>
+    </div>
+
+    <!-- Description -->
+    <div style="margin-bottom:14px;">
+      <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Who is served here? <span style="color:#9ca3af;font-weight:400;">(optional)</span></label>
+      <textarea id="sug_description" rows="2" placeholder="e.g. Approximately 80 children aged 5–16"
+        style="width:100%;border:2px solid #e5e7eb;border-radius:10px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;resize:none;box-sizing:border-box;"
+        onfocus="this.style.borderColor='#22c55e'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
+    </div>
+
+    <!-- Contact -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div>
+        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Contact Name <span style="color:#9ca3af;font-weight:400;">(opt.)</span></label>
+        <input type="text" id="sug_contactName" placeholder="Person to contact"
+          style="width:100%;border:2px solid #e5e7eb;border-radius:10px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;box-sizing:border-box;"
           onfocus="this.style.borderColor='#22c55e'" onblur="this.style.borderColor='#e5e7eb'"/>
       </div>
-
-      <div style="margin-bottom:14px;">
-        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:7px;">Category</label>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;">
-          <button type="button" onclick="snSelectCat('orphanage')" id="sncat_orphanage" class="snCatBtn" style="border:2px solid #e5e7eb;background:#f9fafb;border-radius:10px;padding:8px 4px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.7rem;font-weight:600;color:#374151;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .15s;"><span style="font-size:1.2rem;">🏠</span>Orphanage</button>
-          <button type="button" onclick="snSelectCat('shelter')"   id="sncat_shelter"   class="snCatBtn" style="border:2px solid #e5e7eb;background:#f9fafb;border-radius:10px;padding:8px 4px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.7rem;font-weight:600;color:#374151;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .15s;"><span style="font-size:1.2rem;">🏕️</span>Shelter</button>
-          <button type="button" onclick="snSelectCat('oldage')"    id="sncat_oldage"    class="snCatBtn" style="border:2px solid #e5e7eb;background:#f9fafb;border-radius:10px;padding:8px 4px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.7rem;font-weight:600;color:#374151;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .15s;"><span style="font-size:1.2rem;">👴</span>Old Age</button>
-          <button type="button" onclick="snSelectCat('school')"    id="sncat_school"    class="snCatBtn" style="border:2px solid #e5e7eb;background:#f9fafb;border-radius:10px;padding:8px 4px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.7rem;font-weight:600;color:#374151;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .15s;"><span style="font-size:1.2rem;">🏫</span>School</button>
-          <button type="button" onclick="snSelectCat('hospital')"  id="sncat_hospital"  class="snCatBtn" style="border:2px solid #e5e7eb;background:#f9fafb;border-radius:10px;padding:8px 4px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.7rem;font-weight:600;color:#374151;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .15s;"><span style="font-size:1.2rem;">🏥</span>Hospital</button>
-          <button type="button" onclick="snSelectCat('community')" id="sncat_community" class="snCatBtn" style="border:2px solid #e5e7eb;background:#f9fafb;border-radius:10px;padding:8px 4px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.7rem;font-weight:600;color:#374151;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .15s;"><span style="font-size:1.2rem;">🤝</span>Community</button>
-          <button type="button" onclick="snSelectCat('station')"   id="sncat_station"   class="snCatBtn" style="border:2px solid #e5e7eb;background:#f9fafb;border-radius:10px;padding:8px 4px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.7rem;font-weight:600;color:#374151;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .15s;"><span style="font-size:1.2rem;">🚉</span>Station</button>
-          <button type="button" onclick="snSelectCat('other')"     id="sncat_other"     class="snCatBtn" style="border:2px solid #1a4a2e;background:#1a4a2e;border-radius:10px;padding:8px 4px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.7rem;font-weight:700;color:#fff;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .15s;"><span style="font-size:1.2rem;">📍</span>Other</button>
-        </div>
-        <input type="hidden" id="sn_category" value="other"/>
-      </div>
-
-      <div style="margin-bottom:14px;">
-        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Who is served here? <span style="color:#9ca3af;font-weight:400;">(optional)</span></label>
-        <textarea id="sn_description" rows="2" placeholder="e.g. ~80 children aged 5–16, daily meals needed"
-          style="width:100%;border:2px solid #e5e7eb;border-radius:10px;padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;resize:none;box-sizing:border-box;"
-          onfocus="this.style.borderColor='#22c55e'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
-        <div>
-          <label style="font-size:.78rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Contact Person <span style="color:#9ca3af;">(opt.)</span></label>
-          <input type="text" id="sn_contactName" placeholder="Manager / Warden"
-            style="width:100%;border:2px solid #e5e7eb;border-radius:10px;padding:11px 12px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;box-sizing:border-box;"
-            onfocus="this.style.borderColor='#22c55e'" onblur="this.style.borderColor='#e5e7eb'"/>
-        </div>
-        <div>
-          <label style="font-size:.78rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Phone <span style="color:#9ca3af;">(opt.)</span></label>
-          <input type="tel" id="sn_contactPhone" placeholder="+91 98765 43210"
-            style="width:100%;border:2px solid #e5e7eb;border-radius:10px;padding:11px 12px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;box-sizing:border-box;"
-            onfocus="this.style.borderColor='#22c55e'" onblur="this.style.borderColor='#e5e7eb'"/>
-        </div>
-      </div>
-
-      <button type="button" onclick="snGoStep(2)" style="
-        width:100%;background:linear-gradient(135deg,#1a4a2e,#2d7a4f);color:#fff;border:none;
-        border-radius:12px;padding:14px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.95rem;
-        cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
-        Next — Pin on Map →
-      </button>
-    </div>
-
-    <!-- STEP 2 -->
-    <div id="snStep2" style="display:none;">
-
-      <div style="margin-bottom:12px;">
-        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">
-          Address <span style="color:#ef4444;">*</span>
-          <span style="font-weight:400;color:#9ca3af;"> — type, use GPS, or tap map</span>
-        </label>
-        <input type="text" id="sn_address" required placeholder="Full address of this needy location"
-          style="width:100%;border:2px solid #e5e7eb;border-radius:10px;padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;box-sizing:border-box;"
-          onfocus="this.style.borderColor='#22c55e'" onblur="this.style.borderColor='#e5e7eb'"
-          oninput="document.getElementById('sn_address').dataset.auto='0'"/>
-      </div>
-
-      <!-- GPS / Map tabs -->
-      <div style="display:flex;gap:8px;margin-bottom:12px;">
-        <button type="button" onclick="snLocTab('gps')" id="snLocGPS"
-          style="flex:1;padding:10px 6px;border:2px solid #e5e7eb;border-radius:10px;background:#f9fafb;color:#374151;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">
-          <i class="bi bi-geo-alt-fill"></i> Use GPS
-        </button>
-        <button type="button" onclick="snLocTab('map')" id="snLocMap"
-          style="flex:1;padding:10px 6px;border:2px solid #1a4a2e;border-radius:10px;background:#1a4a2e;color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">
-          <i class="bi bi-map-fill"></i> Pin on Map
-        </button>
-      </div>
-
-      <!-- GPS status -->
-      <div id="snGPSSt" style="display:none;margin-bottom:10px;background:#f0fdf4;border-radius:10px;padding:10px 14px;font-size:.82rem;color:#166534;align-items:center;gap:8px;">
-        <div style="width:14px;height:14px;border:2px solid #14532d;border-top-color:transparent;border-radius:50%;animation:snSpin .7s linear infinite;flex-shrink:0;"></div>
-        <span id="snGPSTxt">Detecting location…</span>
-      </div>
-
-      <!-- Leaflet map -->
-      <div id="snMapWrap" style="margin-bottom:12px;">
-        <div id="snMap" style="height:270px;border-radius:14px;border:2px solid #e5e7eb;"></div>
-        <p style="font-size:.73rem;color:#6b7280;margin-top:5px;text-align:center;">
-          <i class="bi bi-cursor me-1"></i>Tap anywhere on the map to drop a pin at the needy location
-        </p>
-      </div>
-
-      <!-- Coords bar -->
-      <div id="snCBar" style="display:none;background:#f0fdf4;border:1.5px solid #4ade80;border-radius:10px;padding:9px 14px;margin-bottom:12px;font-size:.78rem;color:#166534;align-items:center;gap:8px;">
-        <i class="bi bi-crosshair" style="flex-shrink:0;font-size:1rem;"></i>
-        <span id="snCTxt"></span>
-        <button type="button" onclick="snClearPin()" style="margin-left:auto;background:none;border:none;color:#991b1b;cursor:pointer;font-size:.82rem;font-weight:600;padding:0;">Clear pin</button>
-      </div>
-
-      <input type="hidden" id="sn_lat"/>
-      <input type="hidden" id="sn_lng"/>
-
-      <div id="snErr" style="display:none;background:#fee2e2;color:#991b1b;border-radius:10px;padding:10px 14px;font-size:.82rem;margin-bottom:12px;"></div>
-
-      <div style="display:flex;gap:10px;margin-top:6px;">
-        <button type="button" onclick="snGoStep(1)" style="
-          flex:1;background:#f3f4f6;color:#374151;border:none;border-radius:12px;
-          padding:13px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.88rem;cursor:pointer;">
-          ← Back
-        </button>
-        <button type="submit" id="snSubmitBtn" style="
-          flex:2;background:linear-gradient(135deg,#1a4a2e,#2d7a4f);color:#fff;border:none;
-          border-radius:12px;padding:13px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.9rem;
-          cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
-          <i class="bi bi-send-fill"></i>Submit Suggestion
-        </button>
+      <div>
+        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Phone <span style="color:#9ca3af;font-weight:400;">(opt.)</span></label>
+        <input type="tel" id="sug_contactPhone" placeholder="+91 99999 00000"
+          style="width:100%;border:2px solid #e5e7eb;border-radius:10px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;box-sizing:border-box;"
+          onfocus="this.style.borderColor='#22c55e'" onblur="this.style.borderColor='#e5e7eb'"/>
       </div>
     </div>
 
+    <!-- GPS (auto-detect) -->
+    <div style="margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button type="button" onclick="detectGPS()" id="gpsBtn" style="
+          background:#e8f5ee;border:2px solid #bbf7d0;color:#1a4a2e;border-radius:10px;
+          padding:9px 14px;font-family:'DM Sans',sans-serif;font-weight:600;
+          font-size:.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;flex-shrink:0;
+        "><i class="bi bi-geo-alt-fill"></i>Use GPS</button>
+        <span id="gpsStatus" style="font-size:.78rem;color:#6b7280;"></span>
+      </div>
+      <input type="hidden" id="sug_lat"/>
+      <input type="hidden" id="sug_lng"/>
+    </div>
+
+    <!-- Error msg -->
+    <div id="suggestError" style="display:none;background:#fee2e2;color:#991b1b;border-radius:10px;padding:10px 14px;font-size:.82rem;margin-bottom:14px;"></div>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:10px;">
+      <button type="button" onclick="closeSuggestModal()" style="
+        flex:1;background:#f3f4f6;color:#374151;border:none;border-radius:12px;
+        padding:13px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.9rem;cursor:pointer;
+      ">Cancel</button>
+      <button type="submit" id="suggestSubmitBtn" style="
+        flex:2;background:linear-gradient(135deg,#1a4a2e,#2d7a4f);color:#fff;border:none;
+        border-radius:12px;padding:13px;font-family:'DM Sans',sans-serif;font-weight:700;
+        font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+      "><i class="bi bi-send-fill"></i>Submit Suggestion</button>
+    </div>
   </form>
 </div>
 
-<style>@keyframes snSpin{to{transform:rotate(360deg)}}</style>
-
 <script>
-(function(){
-  const EP = '<%= role === "donor" ? "/donor/suggest-location" : "/ngo/suggest-location" %>';
-  let mapObj=null, mapInited=false, mapMarker=null, selCat='other';
+const SUGGEST_ENDPOINT = '<%= role === "donor" ? "/donor/suggest-location" : "/ngo/suggest-location" %>';
 
-  window.openSuggestNeedyModal = function(){
-    document.getElementById('suggestNeedyBackdrop').style.display='block';
-    const m=document.getElementById('suggestNeedyModal');
-    m.style.display='block';
-    requestAnimationFrame(()=>m.style.transform='translateY(0)');
-    document.getElementById('snSuccess').style.display='none';
-    document.getElementById('snForm').style.display='block';
-    document.getElementById('snErr').style.display='none';
-    snGoStep(1); snSelectCat('other');
+function openSuggestModal() {
+  document.getElementById('suggestModalBackdrop').style.display = 'block';
+  const m = document.getElementById('suggestModal');
+  m.style.display = 'block';
+  setTimeout(() => m.style.transform = 'translateY(0)', 10);
+  document.getElementById('suggestSuccess').style.display = 'none';
+  document.getElementById('suggestForm').style.display = 'block';
+  document.getElementById('suggestError').style.display = 'none';
+}
+
+function closeSuggestModal() {
+  const m = document.getElementById('suggestModal');
+  m.style.transform = 'translateY(100%)';
+  setTimeout(() => {
+    m.style.display = 'none';
+    document.getElementById('suggestModalBackdrop').style.display = 'none';
+  }, 300);
+}
+
+function detectGPS() {
+  const btn = document.getElementById('gpsBtn');
+  const status = document.getElementById('gpsStatus');
+  btn.innerHTML = '<div style="width:14px;height:14px;border:2px solid #1a4a2e;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;"></div> Detecting…';
+  navigator.geolocation.getCurrentPosition(pos => {
+    document.getElementById('sug_lat').value = pos.coords.latitude;
+    document.getElementById('sug_lng').value = pos.coords.longitude;
+    btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> GPS Set';
+    btn.style.background = '#dcfce7'; btn.style.borderColor = '#4ade80';
+    status.textContent = pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4);
+    status.style.color = '#166534';
+    // Reverse geocode and fill address if empty
+    if (!document.getElementById('sug_address').value) {
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`)
+        .then(r => r.json()).then(d => {
+          if (d.display_name) document.getElementById('sug_address').value = d.display_name;
+        }).catch(() => {});
+    }
+  }, () => {
+    btn.innerHTML = '<i class="bi bi-geo-alt-fill"></i>Use GPS';
+    status.textContent = 'Location denied'; status.style.color = '#991b1b';
+  });
+}
+
+async function submitSuggestion(e) {
+  e.preventDefault();
+  const btn = document.getElementById('suggestSubmitBtn');
+  const errEl = document.getElementById('suggestError');
+  errEl.style.display = 'none';
+  btn.innerHTML = '<div style="width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;"></div> Submitting…';
+  btn.disabled = true;
+
+  const body = {
+    name:         document.getElementById('sug_name').value.trim(),
+    address:      document.getElementById('sug_address').value.trim(),
+    category:     document.getElementById('sug_category').value,
+    description:  document.getElementById('sug_description').value.trim(),
+    contactName:  document.getElementById('sug_contactName').value.trim(),
+    contactPhone: document.getElementById('sug_contactPhone').value.trim(),
+    latitude:     document.getElementById('sug_lat').value,
+    longitude:    document.getElementById('sug_lng').value,
   };
 
-  window.closeSuggestNeedyModal = function(){
-    const m=document.getElementById('suggestNeedyModal');
-    m.style.transform='translateY(100%)';
-    setTimeout(()=>{
-      m.style.display='none';
-      document.getElementById('suggestNeedyBackdrop').style.display='none';
-    },360);
-  };
-
-  window.snGoStep = function(s){
-    document.getElementById('snStep1').style.display=s===1?'block':'none';
-    document.getElementById('snStep2').style.display=s===2?'block':'none';
-    const t1=document.getElementById('snTab1'), t2=document.getElementById('snTab2');
-    if(s===1){t1.style.background='#1a4a2e';t1.style.color='#fff';t2.style.background='#f9fafb';t2.style.color='#6b7280';}
-    else     {t2.style.background='#1a4a2e';t2.style.color='#fff';t1.style.background='#f9fafb';t1.style.color='#6b7280';setTimeout(initMap,80);}
-  };
-
-  window.snSelectCat = function(val){
-    selCat=val;
-    document.getElementById('sn_category').value=val;
-    document.querySelectorAll('.snCatBtn').forEach(b=>{
-      const sel=b.id==='sncat_'+val;
-      b.style.background=sel?'#1a4a2e':'#f9fafb';
-      b.style.color=sel?'#fff':'#374151';
-      b.style.borderColor=sel?'#1a4a2e':'#e5e7eb';
+  try {
+    const res = await fetch(SUGGEST_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
     });
-  };
-
-  window.snLocTab = function(m){
-    const gEl=document.getElementById('snLocGPS'), mEl=document.getElementById('snLocMap');
-    if(m==='gps'){
-      gEl.style.background='#1a4a2e';gEl.style.color='#fff';gEl.style.borderColor='#1a4a2e';
-      mEl.style.background='#f9fafb';mEl.style.color='#374151';mEl.style.borderColor='#e5e7eb';
-      doGPS();
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('suggestForm').style.display = 'none';
+      document.getElementById('suggestSuccess').style.display = 'block';
+      setTimeout(closeSuggestModal, 3000);
     } else {
-      mEl.style.background='#1a4a2e';mEl.style.color='#fff';mEl.style.borderColor='#1a4a2e';
-      gEl.style.background='#f9fafb';gEl.style.color='#374151';gEl.style.borderColor='#e5e7eb';
-      document.getElementById('snMapWrap').style.display='block';
-      setTimeout(initMap,80);
+      errEl.textContent = data.message || 'Something went wrong.';
+      errEl.style.display = 'block';
     }
-  };
-
-  function doGPS(){
-    const st=document.getElementById('snGPSSt');
-    st.style.display='flex';
-    document.getElementById('snGPSTxt').textContent='Detecting location…';
-    navigator.geolocation.getCurrentPosition(pos=>{
-      setPin(pos.coords.latitude,pos.coords.longitude);
-      st.style.display='none';
-    },()=>{
-      document.getElementById('snGPSTxt').textContent='Access denied — tap map instead';
-      st.style.background='#fee2e2';st.style.color='#991b1b';
-    });
+  } catch (err) {
+    errEl.textContent = 'Network error. Please try again.';
+    errEl.style.display = 'block';
   }
+  btn.innerHTML = '<i class="bi bi-send-fill"></i>Submit Suggestion';
+  btn.disabled = false;
+}
 
-  function initMap(){
-    if(mapInited){mapObj&&mapObj.invalidateSize();return;}
-    if(typeof L==='undefined'){
-      if(!document.getElementById('lfCSS')){
-        const c=document.createElement('link');c.id='lfCSS';c.rel='stylesheet';
-        c.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';document.head.appendChild(c);
-      }
-      const s=document.createElement('script');
-      s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      s.onload=initMap;document.head.appendChild(s);return;
-    }
-    mapInited=true;
-    mapObj=L.map('snMap').setView([20.5937,78.9629],5);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(mapObj);
-    mapObj.on('click',e=>setPin(e.latlng.lat,e.latlng.lng));
-    setTimeout(()=>mapObj.invalidateSize(),200);
-    if(navigator.geolocation){
-      navigator.geolocation.getCurrentPosition(p=>mapObj.setView([p.coords.latitude,p.coords.longitude],13),()=>{});
-    }
-  }
-
-  function setPin(lat,lng){
-    document.getElementById('sn_lat').value=lat;
-    document.getElementById('sn_lng').value=lng;
-    if(!mapInited){initMap();return;}
-    if(mapMarker)mapObj.removeLayer(mapMarker);
-    mapMarker=L.marker([lat,lng],{icon:L.divIcon({
-      className:'',iconSize:[36,36],iconAnchor:[18,36],
-      html:'<div style="background:#1a4a2e;width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 3px 12px rgba(0,0,0,.35);"></div>'
-    })}).addTo(mapObj);
-    mapObj.setView([lat,lng],Math.max(mapObj.getZoom(),15));
-    const cb=document.getElementById('snCBar');
-    document.getElementById('snCTxt').textContent=lat.toFixed(5)+', '+lng.toFixed(5)+' — pinned ✓';
-    cb.style.display='flex';
-    fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lng+'&format=json')
-      .then(r=>r.json()).then(d=>{
-        if(d.display_name){
-          const a=document.getElementById('sn_address');
-          if(!a.value||a.dataset.auto==='0'&&!a.value){a.value=d.display_name;a.dataset.auto='1';}
-          else if(!a.value){a.value=d.display_name;a.dataset.auto='1';}
-        }
-      }).catch(()=>{});
-  }
-
-  window.snClearPin=function(){
-    document.getElementById('sn_lat').value='';document.getElementById('sn_lng').value='';
-    document.getElementById('snCBar').style.display='none';
-    if(mapMarker&&mapObj){mapObj.removeLayer(mapMarker);mapMarker=null;}
-  };
-
-  window.snSubmit=async function(e){
-    e.preventDefault();
-    const err=document.getElementById('snErr');err.style.display='none';
-    const name=document.getElementById('sn_name').value.trim();
-    const addr=document.getElementById('sn_address').value.trim();
-    if(!name){snGoStep(1);err.textContent='Please enter a location name.';err.style.display='block';return;}
-    if(!addr){err.textContent='Please enter an address or pin the location on the map.';err.style.display='block';return;}
-    const btn=document.getElementById('snSubmitBtn');
-    btn.innerHTML='<div style="width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:snSpin .7s linear infinite;"></div> Submitting…';
-    btn.disabled=true;
-    try{
-      const res=await fetch(EP,{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          name,address:addr,category:selCat,
-          description:document.getElementById('sn_description').value.trim(),
-          contactName:document.getElementById('sn_contactName').value.trim(),
-          contactPhone:document.getElementById('sn_contactPhone').value.trim(),
-          latitude:document.getElementById('sn_lat').value,
-          longitude:document.getElementById('sn_lng').value
-        })});
-      const d=await res.json();
-      if(d.success){
-        document.getElementById('snForm').style.display='none';
-        document.getElementById('snSuccess').style.display='block';
-        setTimeout(closeSuggestNeedyModal,3200);
-      } else {err.textContent=d.message||'Something went wrong.';err.style.display='block';}
-    }catch{err.textContent='Network error. Please try again.';err.style.display='block';}
-    btn.innerHTML='<i class="bi bi-send-fill"></i>Submit Suggestion';btn.disabled=false;
-  };
-
-  document.addEventListener('DOMContentLoaded',()=>snSelectCat('other'));
-})();
+// Add spin keyframe if not present
+if (!document.getElementById('suggestSpinStyle')) {
+  const s = document.createElement('style');
+  s.id = 'suggestSpinStyle';
+  s.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+  document.head.appendChild(s);
+}
 </script>
